@@ -1,0 +1,32 @@
+v0.12
+Update Feb.24,2011
+Cleaned some algorithm code, only left FIFO and SFQ.
+Reorgnized the code structure, especially simplified the parameter seting up.
+Implemented the router component, thus network topology can be easier deployed, and users have more choices.
+Added the Request class, so users can provide requests in the trace files with size [1B, 1GB], and they don't need to consider the stripping.
+Stripping information is given by the metadata server. A new class "qPacket" is implemented for carrying this information. Each request issues one qPacket message to the metadata server before its data transfer to ask for the data layout.
+Request class maintains a "window" for issuing concurrent job packets, each window has the max size of 10MB and it moves forward only when all the data trasfers in the window are finished (this is according to PVFS2).
+Data type "long long" is introduced for "offset" argument.
+---------------------------------------
+Update Jul.18,2010
+New version.
+1. Simplified .ned files to efficiently extend simulation scale. Now the system supports 32 clients, 1 metadata server and 8 data servers.
+2. Trace files should be put into the traces/ folder; the results/ folder contains the results from each client; the schedules/ folder is used for the algorithms to print out schduling information.
+3. One bug in SFQ is corrected.
+4. DSFQ.cc and DSFQ.h are rewriten, DSFQ inherits from SFQ.
+5. Clientspecs.h is created to accommodate the macros specific to the clients. Part of them were in General.h previously.
+6. Synchronized trace input pattern is implimented. To configure, set the micros in Clientspecs.h.
+----------------------------------------
+Initial version
+In current version, we have 4 clients, 1 metadata server and 8 data servers.
+Each client represents one job flow, it reads the traces from a specific file.
+When the client gets a job from the trace file, it sends out a schedule request to the metadata server.
+The metadata server gets the scheduling request. If the scheduling decision is not given in the trace file, it will decide at which data server the request should be served (according to some algorithm), and then sends the scheduling reply to the client.
+Upon receiving the scheduling reply, the client sends the job to the specified data server.
+The data server puts the job into a queue, this queue can be designed as FIFO, SFQ, DSFQ or any queue else.
+When a new job arrives at the client or a job has finished from disksim, the client checks if the outstanding job number is smaller than the degree, if it is, dispatch more jobs to disksim.
+Each data server has a disksim instance, they communicate via socket connection.
+-----------
+FIFO, MinSFQ(D), and SFQ(D) algorithms have been added.
+-----------
+DSFQ(D) and DMinSFQ(D) algorithms have been added.
