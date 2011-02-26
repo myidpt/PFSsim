@@ -19,6 +19,7 @@
 
 #define REQ_MAXSIZE 0x40000000 // According to PVFS 0x40000000, 1GB
 #define JOB_MAXSIZE 0xa00000 // According to PVFS 0xa00000, 10MB
+#define LOWOFFSET_RANGE 0x80000000 // offset = lowoffset + lowoffset_range * highoffset
 
 // For messages types
 #define SELF_EVENT	0

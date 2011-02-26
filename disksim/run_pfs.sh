@@ -1,6 +1,6 @@
 #!/bin/bash
 DIR=pfs_result
-PARV=designed_disks/ibm18es.parv
+PARV=valid/ibm18es.parv
 mkdir $DIR
 src/physim 8800 $PARV $DIR/outv0 $DIR/out0 & 
 src/physim 8801 $PARV $DIR/outv1 $DIR/out1 &

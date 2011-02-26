@@ -26,7 +26,8 @@ message gPacket extends cPacket
     
     double qos_delay = 0; // The permitted delay of this job.
     
-    long offset = 0; // The offset of the access.
+    long highoffset = 0; // The higher range of the offset.
+    long lowoffset = 0; // The offset of the access.
     int size = 0; // The number of bytes of the access.
     int read = 0; // write for 0 and read for 1.
     int decision = -1; // The data server no. that the job to be sent.

@@ -44,7 +44,8 @@ gPacket * Request::nextgPacket() {
 	for(int i = 0; i < windowSize; i ++){
 		if(window[i] == -1){ // Unsent
 			gPacket * gpkt = new gPacket("gpacket"); // Create new gPacket
-			gpkt->setOffset(index);
+			gpkt->setLowoffset(index % LOWOFFSET_RANGE);
+			gpkt->setHighoffset(index/LOWOFFSET_RANGE);
 			gpkt->setSize(windowsizeInByte/windowSize);
 			gpkt->setRead(read);
 			gpkt->setApp(app);

@@ -44,9 +44,9 @@ void Mserver::setLayout(qPacket * qpkt){
 }
 
 void Mserver::sendSafe(cMessage * cmsg){
-	cGate *ggate = gate("g$o");
-	if(ggate->isBusy())
-		sendDelayed(cmsg, ggate->getTransmissionFinishTime() - simTime(), "g$o");
+	cChannel * cch = gate("g$o")->getTransmissionChannel();
+	if(cch->isBusy())
+		sendDelayed(cmsg, cch->getTransmissionFinishTime() - simTime(), "g$o");
 	else
 		send(cmsg, "g$o");
 }

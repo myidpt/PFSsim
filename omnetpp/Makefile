@@ -1,12 +1,12 @@
 #
-# OMNeT++/OMNEST Makefile for PFSsim_v0.12
+# OMNeT++/OMNEST Makefile for PFSsim_v0.13
 #
 # This file was generated with the command:
 #  opp_makemake -f --deep -O out
 #
 
 # Name of target to be created (-o option)
-TARGET = PFSsim_v0.12$(EXE_SUFFIX)
+TARGET = PFSsim_v0.13$(EXE_SUFFIX)
 
 # User interface (uncomment one) (-u option)
 USERIF_LIBS = $(ALL_ENV_LIBS) # that is, $(TKENV_LIBS) $(CMDENV_LIBS)
@@ -95,10 +95,10 @@ MSGCOPTS = $(INCLUDE_PATH)
 all: $(TARGET)
 
 $(TARGET) : $O/$(TARGET)
-	ln -s -f $O/$(TARGET) .
+	$(LN) $O/$(TARGET) .
 
 $O/$(TARGET): $(OBJS)  $(wildcard $(EXTRA_OBJS)) Makefile
-	@mkdir -p $O
+	@$(MKPATH) $O
 	$(CXX) $(LDFLAGS) -o $O/$(TARGET)  $(OBJS) $(EXTRA_OBJS) $(WHOLE_ARCHIVE_ON) $(LIBS) $(WHOLE_ARCHIVE_OFF) $(OMNETPP_LIBS)
 
 .PHONY:
@@ -106,7 +106,7 @@ $O/$(TARGET): $(OBJS)  $(wildcard $(EXTRA_OBJS)) Makefile
 .SUFFIXES: .cc
 
 $O/%.o: %.cc
-	@mkdir -p $(dir $@)
+	@$(MKPATH) $(dir $@)
 	$(CXX) -c $(COPTS) -o $@ $<
 
 %_m.cc %_m.h: %.msg
@@ -116,7 +116,7 @@ msgheaders: $(MSGFILES:.msg=_m.h)
 
 clean:
 	-rm -rf $O
-	-rm -f PFSsim_v0.12 PFSsim_v0.12.exe libPFSsim_v0.12.so libPFSsim_v0.12.a libPFSsim_v0.12.dll libPFSsim_v0.12.dylib
+	-rm -f PFSsim_v0.13 PFSsim_v0.13.exe libPFSsim_v0.13.so libPFSsim_v0.13.a libPFSsim_v0.13.dll libPFSsim_v0.13.dylib
 	-rm -f ./*_m.cc ./*_m.h
 	-rm -f client/*_m.cc client/*_m.h
 	-rm -f packet/*_m.cc packet/*_m.h
@@ -136,81 +136,81 @@ depend:
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
 $O/client/Client.o: client/Client.cc \
-	client/Client.h \
 	request/Request.h \
-	DServerspecs.h \
-	Clientspecs.h \
 	packet/GPacket_m.h \
+	DServerspecs.h \
 	packet/QPacket_m.h \
 	packet/SPacket_m.h \
-	General.h
+	Clientspecs.h \
+	General.h \
+	client/Client.h
 $O/packet/QPacket_m.o: packet/QPacket_m.cc \
 	packet/QPacket_m.h
-$O/packet/GPacket_m.o: packet/GPacket_m.cc \
-	packet/GPacket_m.h
 $O/packet/SPacket_m.o: packet/SPacket_m.cc \
 	packet/SPacket_m.h
+$O/packet/GPacket_m.o: packet/GPacket_m.cc \
+	packet/GPacket_m.h
 $O/request/Request.o: request/Request.cc \
 	request/Request.h \
-	DServerspecs.h \
-	Clientspecs.h \
-	packet/QPacket_m.h \
 	packet/GPacket_m.h \
+	DServerspecs.h \
+	packet/QPacket_m.h \
 	packet/SPacket_m.h \
+	Clientspecs.h \
 	General.h
 $O/router/Queue.o: router/Queue.cc \
 	router/Queue.h
 $O/router/Routing.o: router/Routing.cc \
+	packet/GPacket_m.h \
 	DServerspecs.h \
-	Clientspecs.h \
+	packet/QPacket_m.h \
 	router/Routing.h \
-	packet/QPacket_m.h \
-	packet/GPacket_m.h \
 	packet/SPacket_m.h \
-	General.h
-$O/scheduler/IQueue.o: scheduler/IQueue.cc \
-	DServerspecs.h \
-	scheduler/IQueue.h \
 	Clientspecs.h \
-	packet/QPacket_m.h \
-	packet/GPacket_m.h \
-	packet/SPacket_m.h \
 	General.h
 $O/scheduler/SFQ.o: scheduler/SFQ.cc \
-	DServerspecs.h \
-	scheduler/SFQ.h \
-	scheduler/IQueue.h \
-	Clientspecs.h \
 	packet/GPacket_m.h \
+	DServerspecs.h \
 	packet/QPacket_m.h \
+	scheduler/IQueue.h \
 	packet/SPacket_m.h \
+	Clientspecs.h \
+	scheduler/SFQ.h \
+	General.h
+$O/scheduler/IQueue.o: scheduler/IQueue.cc \
+	packet/GPacket_m.h \
+	DServerspecs.h \
+	packet/QPacket_m.h \
+	scheduler/IQueue.h \
+	packet/SPacket_m.h \
+	Clientspecs.h \
 	General.h
 $O/scheduler/FIFO.o: scheduler/FIFO.cc \
+	packet/GPacket_m.h \
 	DServerspecs.h \
+	packet/QPacket_m.h \
 	scheduler/IQueue.h \
+	packet/SPacket_m.h \
 	Clientspecs.h \
 	scheduler/FIFO.h \
-	packet/QPacket_m.h \
-	packet/GPacket_m.h \
-	packet/SPacket_m.h \
 	General.h
 $O/server/Mserver.o: server/Mserver.cc \
+	packet/GPacket_m.h \
 	DServerspecs.h \
+	packet/QPacket_m.h \
+	packet/SPacket_m.h \
 	server/Mserver.h \
 	Clientspecs.h \
-	packet/QPacket_m.h \
-	packet/GPacket_m.h \
-	packet/SPacket_m.h \
 	General.h
 $O/server/Dserver.o: server/Dserver.cc \
-	DServerspecs.h \
-	scheduler/SFQ.h \
-	scheduler/IQueue.h \
-	Clientspecs.h \
-	scheduler/FIFO.h \
-	packet/GPacket_m.h \
-	packet/QPacket_m.h \
-	packet/SPacket_m.h \
 	server/Dserver.h \
+	packet/GPacket_m.h \
+	DServerspecs.h \
+	packet/QPacket_m.h \
+	scheduler/IQueue.h \
+	packet/SPacket_m.h \
+	scheduler/FIFO.h \
+	Clientspecs.h \
+	scheduler/SFQ.h \
 	General.h
 

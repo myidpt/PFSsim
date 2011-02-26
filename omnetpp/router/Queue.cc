@@ -25,7 +25,7 @@ void Queue::initialize(){
 void Queue::startTransmitting(cMessage *msg){
 	send(msg, "line$o");
     // The schedule an event for the time when last bit will leave the gate.
-    simtime_t endTransmission = gate("line$o")->getTransmissionFinishTime();
+    simtime_t endTransmission = gate("line$o")->getTransmissionChannel()->getTransmissionFinishTime();
     scheduleAt(endTransmission, endTransmissionEvent);
 }
 

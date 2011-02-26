@@ -187,9 +187,9 @@ void Client::handleFinishedPacket(gPacket * gpkt){
 }
 
 void Client::sendSafe(cMessage * cmsg){
-	cGate *ggate = gate("g$o");
-	if(ggate->isBusy()){
-		sendDelayed(cmsg, ggate->getTransmissionFinishTime() - simTime(), "g$o");
+	cChannel * cch = gate("g$o")->getTransmissionChannel();
+	if(cch->isBusy()){
+		sendDelayed(cmsg, cch->getTransmissionFinishTime() - simTime(), "g$o");
 //		printf("Send delayed.\n");
 	}
 	else
@@ -211,7 +211,7 @@ void Client::pktStatistic(gPacket * gpkt){
 	fprintf(sfp, "\t%ld %lld %d %d %d %d\n"
 			"\t\t%lf %lf %lf %lf %lf\n",
 			gpkt->getId(),
-			gpkt->getOffset(),
+			(long long)(gpkt->getLowoffset() + gpkt->getHighoffset() * LOWOFFSET_RANGE),
 			gpkt->getSize(),
 			gpkt->getRead(),
 			gpkt->getApp(), // End of basic info

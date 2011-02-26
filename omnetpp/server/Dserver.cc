@@ -182,7 +182,7 @@ int Dserver::dispatchJobs(){
 				fflush(stdout);
 				syncJob->id = gpkt->getId();
 				syncJob->time = gpkt->getDispatchtime();
-				syncJob->off = gpkt->getOffset()%10000000;
+				syncJob->off = (gpkt->getHighoffset() * LOWOFFSET_RANGE + gpkt->getLowoffset())%10000000;
 		//		syncJob->len = MAXWBUFFSIZE;
 				syncJob->len = WDISK_SIZE;
 				syncJob->read = gpkt->getRead();
@@ -306,9 +306,9 @@ int Dserver::sendResult(gPacket * gpkt){
 }
 
 void Dserver::sendSafe(gPacket * gpkt){
-	cGate *msgate = gate("g$o");
-	if(msgate->isBusy()){
-		sendDelayed(gpkt, msgate->getTransmissionFinishTime() - simTime(), "g$o");
+	cChannel * cch = gate("g$o")->getTransmissionChannel();
+	if(cch->isBusy()){
+		sendDelayed(gpkt, cch->getTransmissionFinishTime() - simTime(), "g$o");
 //		printf("Send delayed.\n");
 	}
 	else
