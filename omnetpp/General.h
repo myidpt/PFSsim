@@ -7,11 +7,13 @@
 
 #ifndef GENERAL_H_
 #define GENERAL_H_
-#include "Clientspecs.h"
-#include "DServerspecs.h"
+#include "client/Clientspecs.h"
+#include "server/DServerspecs.h"
+#include "scheduler/DSschedulerspecs.h"
 #include "packet/GPacket_m.h"
 #include "packet/SPacket_m.h"
 #include "packet/QPacket_m.h"
+#include "utility/Cache.h"
 
 #define SMALLDBL 0.000001
 
@@ -24,14 +26,19 @@
 // For messages types
 #define SELF_EVENT	0
 #define LAYOUT_REQ 	1
-#define LAYOUT_RESP 	2
+#define LAYOUT_RESP 2
 #define JOB_REQ 	3
-#define JOB_RESP 	4
-#define SCH_JOB		5 // This job is out of scheduler now
-#define W_CACHE_JOB_DONE	6 // When the job is done by committing to the cache.
-#define W_DISK_JOB_DONE		7
-#define R_CACHE_JOB_DONE	8
-#define R_DISK_JOB_DONE		9
+#define JOB_DISP	4 // This job is out of scheduler now
+#define LFILE_REQ	5
+#define BLK_REQ		6
+#define BLK_RESP	7
+#define LFILE_RESP	8
+#define JOB_FIN		9
+#define JOB_RESP 	10
+#define W_CACHE_JOB_DONE	17 // When the job is done by committing to the cache.
+#define W_DISK_JOB_DONE		18
+#define R_CACHE_JOB_DONE	19
+#define R_DISK_JOB_DONE		20
 
 // Schedule mechanisms
 #define UNSCHEDULED -1

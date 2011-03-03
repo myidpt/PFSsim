@@ -15,7 +15,7 @@
 
 #include "scheduler/SFQ.h"
 
-SFQ::SFQ(int id):IQueue(id) {
+SFQ::SFQ(int deg):IQueue(deg) {
 	vtime = 0;
 	for(int i = 0; i < MAX_APP; i ++)
 		maxftags[i] = 0;
@@ -37,14 +37,12 @@ void SFQ::pushWaitQ(gPacket * gpkt){
 	maxftags[app] = job -> ftag;
 
 	waitQ[app].push_back(job);
-
-#ifdef DEBUG
-	fprintf(sfile, "%ld A (%.2lf, %.2lf) @ %.2lf\n",
-			gpkt->getId(), job->stag, job->ftag, vtime);
-#endif
 }
 
 gPacket * SFQ::dispatchNext(){
+	if((signed int)(osQ.size()) >= degree) // If outstanding queue is bigger than the degree, stop dispatching more jobs.
+		return NULL;
+
 	// Get the job with the lowest start tag.
 	double mintag = 1000000000;
 	int minindex = -1;
@@ -80,12 +78,6 @@ gPacket * SFQ::dispatchNext(){
 	pushOsQ(job);
 	// Update vtime
 	vtime = job->stag;
-
-#ifdef DEBUG
-	fprintf(sfile, "\t%ld D (%.2lf, %.2lf) @ %.2lf\n",
-			gpkt->getId(), job->stag, job->ftag, vtime);
-#endif
-
 	return gpkt;
 }
 

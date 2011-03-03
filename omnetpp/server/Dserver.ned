@@ -18,11 +18,28 @@
 //
 package server;
 
-simple Dserver
+module Dserver
 {
     parameters:
         @display("i=device/server");
         bool sendInitialMessage = false;
     gates:
         inout g;
+    submodules:
+        dsd: DSdaemon {
+            parameters:
+                @display("p=137,52");
+        }
+        lfs: LocalFS {
+            parameters:
+                @display("p=136,155");
+        }
+        disk: Disk {
+            parameters:
+                @display("p=137,258");
+        }
+    connections:
+        g <--> dsd.eth;
+        dsd.lfs <--> lfs.dsd;
+        lfs.disk <--> disk.g;
 }

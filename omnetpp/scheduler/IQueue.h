@@ -31,17 +31,17 @@
 using namespace std;
 
 class IQueue {
-public:
+protected:
+	int degree;
 	struct Job{
 		gPacket * gpkt;
 		double stag; // The start tags for all applications
 		double ftag; // The finish tags for all applications
 	};
-	int myid;
-	FILE * sfile; // Record the schedule information
+public:
 	double weight[MAX_APP]; // Weight for every application
 
-	IQueue(int id);
+	IQueue(int deg);
 	~IQueue();
 	virtual void pushWaitQ(gPacket *) = 0;
 	virtual gPacket * dispatchNext() = 0;

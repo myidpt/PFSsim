@@ -7,7 +7,7 @@
 #define __CLINETSPECS_H__
 
 // when you change C_TOTAL, remember the W_X, SYNC_X and CLITIME_X macros!
-#define C_TOTAL 64 // Client total number
+#define C_TOTAL 32 // Client total number
 #define MAX_APP C_TOTAL // Max number of applications / flows
 #define APP_TOTAL 1 // App total number
 

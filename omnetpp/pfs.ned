@@ -21,11 +21,12 @@ import client.Client;
 import server.Dserver;
 import server.Mserver;
 import router.Router;
+import scheduler.DSscheduler;
 
 network pfs
 {
     parameters:
-        int numClients = 64;
+        int numClients = 32;
         int numDServers = 4;
     types:
         channel Channel extends ned.DatarateChannel
@@ -45,7 +46,12 @@ network pfs
 
         ds[numDServers]: Dserver {
             parameters:
-                @display("p=76,233");
+                @display("p=265,258");
+        }
+
+        dssch[numDServers]: DSscheduler {
+            parameters:
+                @display("p=121,258");
         }
 
         ms: Mserver {
@@ -58,6 +64,7 @@ network pfs
             gates:
                 c[numClients];
                 ds[numDServers];
+                dssch[numDServers];
         }
     connections:
         // C-Router channels
@@ -65,9 +72,10 @@ network pfs
             c[i].g <--> Channel <--> router.c[i];
         }
 
-        // DS-Router channels
+        // Router-DS and Router-DSscheduler channels
         for i=0..numDServers-1 {
-            ds[i].g <--> Channel <--> router.ds[i];
+            router.ds[i] <--> Channel <--> ds[i].g;
+            router.dssch[i] <--> Channel <--> dssch[i].g;
         }
 
         // MS-Router channels

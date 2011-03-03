@@ -10,11 +10,13 @@
 
 #define DS_TOTAL 4
 #define MAX_DS_NUM 1024
-#define DS_ID_BASE (C_ID_BASE+C_TOTAL)
 #define BASE_PORT 8800
-#define DEGREE 4
-//#define SCH_DELAY 0.028
-#define SCH_DELAY 0
+#define DS_DAEMON_DELAY 0
+#define DS_DAEMON_DEGREE 4
+#define DISK_ID_BASE (C_ID_BASE+C_TOTAL+DS_TOTAL*3)
+#define DISK_DEGREE 1
+#define APP_DATA_RANGE 1E10 // set to be 10GB.
+
 #define MAXWBUFFSIZE 410624 // KB, 401 * 1M
 #define WRITTENBACKSIZE 5120 //KB, 5 M, got from stat.
 #define MAXRCACHESIZE 0 // KB, 802 * 1M

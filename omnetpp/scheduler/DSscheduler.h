@@ -13,12 +13,25 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 //
 
-#include "scheduler/IQueue.h"
+#ifndef DSSCHEDULER_H_
+#define DSSCHEDULER_H_
+#include "General.h"
 
-IQueue::IQueue(int deg){
-	degree = deg;
-	srand((unsigned)time(0));
-}
+#include "FIFO.h"
+#include "SFQ.h"
 
-IQueue::~IQueue(){
-}
+class DSscheduler : public cSimpleModule{
+protected:
+	IQueue * queue;
+public:
+	DSscheduler();
+	void initialize();
+	void handleNewJob(gPacket *);
+	void handleFinishedJob(gPacket *);
+	void dispatchJobs();
+	void sendSafe(gPacket *);
+	void handleMessage(cMessage *);
+	virtual ~DSscheduler();
+};
+
+#endif /* DSSCHEDULER_H_ */

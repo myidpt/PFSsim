@@ -24,7 +24,8 @@ INCLUDE_PATH = \
     -Ischeduleinfo \
     -Ischeduler \
     -Iserver \
-    -Itraces
+    -Itraces \
+    -Iutility
 
 # Additional object and library files to link with
 EXTRA_OBJS =
@@ -43,11 +44,15 @@ OBJS = \
     $O/request/Request.o \
     $O/router/Queue.o \
     $O/router/Routing.o \
+    $O/scheduler/DSscheduler.o \
     $O/scheduler/SFQ.o \
     $O/scheduler/FIFO.o \
     $O/scheduler/IQueue.o \
+    $O/server/LocalFS.o \
     $O/server/Mserver.o \
-    $O/server/Dserver.o \
+    $O/server/Disk.o \
+    $O/server/DSdaemon.o \
+    $O/utility/Cache.o \
     $O/packet/GPacket_m.o \
     $O/packet/QPacket_m.o \
     $O/packet/SPacket_m.o
@@ -127,21 +132,24 @@ clean:
 	-rm -f scheduler/*_m.cc scheduler/*_m.h
 	-rm -f server/*_m.cc server/*_m.h
 	-rm -f traces/*_m.cc traces/*_m.h
+	-rm -f utility/*_m.cc utility/*_m.h
 
 cleanall: clean
 	-rm -rf $(PROJECT_OUTPUT_DIR)
 
 depend:
-	$(MAKEDEPEND) $(INCLUDE_PATH) -f Makefile -P\$$O/ -- $(MSG_CC_FILES)  ./*.cc client/*.cc packet/*.cc request/*.cc results/*.cc router/*.cc scheduleinfo/*.cc scheduler/*.cc server/*.cc traces/*.cc
+	$(MAKEDEPEND) $(INCLUDE_PATH) -f Makefile -P\$$O/ -- $(MSG_CC_FILES)  ./*.cc client/*.cc packet/*.cc request/*.cc results/*.cc router/*.cc scheduleinfo/*.cc scheduler/*.cc server/*.cc traces/*.cc utility/*.cc
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
 $O/client/Client.o: client/Client.cc \
+	utility/Cache.h \
 	request/Request.h \
 	packet/GPacket_m.h \
-	DServerspecs.h \
 	packet/QPacket_m.h \
+	server/DServerspecs.h \
 	packet/SPacket_m.h \
-	Clientspecs.h \
+	scheduler/DSschedulerspecs.h \
+	client/Clientspecs.h \
 	General.h \
 	client/Client.h
 $O/packet/QPacket_m.o: packet/QPacket_m.cc \
@@ -151,66 +159,116 @@ $O/packet/SPacket_m.o: packet/SPacket_m.cc \
 $O/packet/GPacket_m.o: packet/GPacket_m.cc \
 	packet/GPacket_m.h
 $O/request/Request.o: request/Request.cc \
+	utility/Cache.h \
 	request/Request.h \
 	packet/GPacket_m.h \
-	DServerspecs.h \
 	packet/QPacket_m.h \
+	server/DServerspecs.h \
 	packet/SPacket_m.h \
-	Clientspecs.h \
+	scheduler/DSschedulerspecs.h \
+	client/Clientspecs.h \
 	General.h
 $O/router/Queue.o: router/Queue.cc \
 	router/Queue.h
 $O/router/Routing.o: router/Routing.cc \
+	utility/Cache.h \
 	packet/GPacket_m.h \
-	DServerspecs.h \
 	packet/QPacket_m.h \
 	router/Routing.h \
+	server/DServerspecs.h \
 	packet/SPacket_m.h \
-	Clientspecs.h \
+	scheduler/DSschedulerspecs.h \
+	client/Clientspecs.h \
 	General.h
 $O/scheduler/SFQ.o: scheduler/SFQ.cc \
+	utility/Cache.h \
 	packet/GPacket_m.h \
-	DServerspecs.h \
 	packet/QPacket_m.h \
 	scheduler/IQueue.h \
+	server/DServerspecs.h \
+	client/Clientspecs.h \
+	scheduler/DSschedulerspecs.h \
 	packet/SPacket_m.h \
-	Clientspecs.h \
 	scheduler/SFQ.h \
 	General.h
 $O/scheduler/IQueue.o: scheduler/IQueue.cc \
+	utility/Cache.h \
 	packet/GPacket_m.h \
-	DServerspecs.h \
 	packet/QPacket_m.h \
+	server/DServerspecs.h \
 	scheduler/IQueue.h \
 	packet/SPacket_m.h \
-	Clientspecs.h \
+	scheduler/DSschedulerspecs.h \
+	client/Clientspecs.h \
+	General.h
+$O/scheduler/DSscheduler.o: scheduler/DSscheduler.cc \
+	utility/Cache.h \
+	packet/GPacket_m.h \
+	packet/QPacket_m.h \
+	scheduler/IQueue.h \
+	server/DServerspecs.h \
+	client/Clientspecs.h \
+	scheduler/DSschedulerspecs.h \
+	packet/SPacket_m.h \
+	scheduler/FIFO.h \
+	scheduler/DSscheduler.h \
+	scheduler/SFQ.h \
 	General.h
 $O/scheduler/FIFO.o: scheduler/FIFO.cc \
+	utility/Cache.h \
 	packet/GPacket_m.h \
-	DServerspecs.h \
 	packet/QPacket_m.h \
 	scheduler/IQueue.h \
+	server/DServerspecs.h \
+	client/Clientspecs.h \
+	scheduler/DSschedulerspecs.h \
 	packet/SPacket_m.h \
-	Clientspecs.h \
 	scheduler/FIFO.h \
 	General.h
 $O/server/Mserver.o: server/Mserver.cc \
+	utility/Cache.h \
 	packet/GPacket_m.h \
-	DServerspecs.h \
 	packet/QPacket_m.h \
+	server/DServerspecs.h \
 	packet/SPacket_m.h \
+	scheduler/DSschedulerspecs.h \
+	client/Clientspecs.h \
 	server/Mserver.h \
-	Clientspecs.h \
 	General.h
-$O/server/Dserver.o: server/Dserver.cc \
-	server/Dserver.h \
+$O/server/Disk.o: server/Disk.cc \
+	utility/Cache.h \
 	packet/GPacket_m.h \
-	DServerspecs.h \
 	packet/QPacket_m.h \
+	server/Disk.h \
+	server/DServerspecs.h \
 	scheduler/IQueue.h \
 	packet/SPacket_m.h \
+	scheduler/DSschedulerspecs.h \
+	client/Clientspecs.h \
 	scheduler/FIFO.h \
-	Clientspecs.h \
-	scheduler/SFQ.h \
 	General.h
+$O/server/DSdaemon.o: server/DSdaemon.cc \
+	utility/Cache.h \
+	packet/GPacket_m.h \
+	server/DSdaemon.h \
+	packet/QPacket_m.h \
+	server/DServerspecs.h \
+	scheduler/IQueue.h \
+	packet/SPacket_m.h \
+	scheduler/DSschedulerspecs.h \
+	client/Clientspecs.h \
+	scheduler/FIFO.h \
+	General.h
+$O/server/LocalFS.o: server/LocalFS.cc \
+	utility/Cache.h \
+	packet/GPacket_m.h \
+	packet/QPacket_m.h \
+	server/DServerspecs.h \
+	server/LocalFS.h \
+	packet/SPacket_m.h \
+	scheduler/DSschedulerspecs.h \
+	client/Clientspecs.h \
+	General.h
+$O/utility/Cache.o: utility/Cache.cc \
+	utility/Cache.h
 

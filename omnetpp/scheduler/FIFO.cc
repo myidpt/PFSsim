@@ -15,7 +15,7 @@
 
 #include "scheduler/FIFO.h"
 
-FIFO::FIFO(int id):IQueue(id) {
+FIFO::FIFO(int deg):IQueue(deg) {
 }
 
 void FIFO::pushWaitQ(gPacket * gpkt){
@@ -26,10 +26,11 @@ void FIFO::pushWaitQ(gPacket * gpkt){
 gPacket * FIFO::dispatchNext(){
 	if(waitQ.empty())// No more jobs in queue.
 		return NULL;
+	if((signed int)(osQ.size()) >= degree) // If outstanding queue is bigger than the degree, stop dispatching more jobs.
+		return NULL;
 	gPacket * ret = (gPacket *)waitQ.front();
 	waitQ.pop_front();
 	osQ.push_back(ret); // Push into osQ.
-
 //	fprintf(sfile, "%lf\t%ld D\n", SIMTIME_DBL(simTime()), ret->getId());
 	return ret;
 }

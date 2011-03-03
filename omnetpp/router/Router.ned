@@ -22,37 +22,50 @@ module Router
     gates:
         inout c[];
         inout ds[];
+        inout dssch[];
         inout ms;
     submodules:
         routing: Routing {
             parameters:
-                @display("p=109,180");
+                @display("p=194,180");
             gates:
                 cin[sizeof(c)];
                 dsin[sizeof(ds)];
+                dsschin[sizeof(dssch)];
                 cout[sizeof(c)];
-                dsout[sizeof(ds)];
+                dsout[sizeof(dssch)];
+                dsschout[sizeof(dssch)];
         }
         cq[sizeof(c)]: Queue {
-            @display("p=109,60");
+            @display("p=194,59");
         }
         dsq[sizeof(ds)]: Queue {
-            @display("p=109,306");
+            @display("p=194,303");
+        }
+        dsschq[sizeof(dssch)]: Queue {
+            @display("p=45,180");
         }
         msq: Queue {
-            @display("p=272,180");
+            @display("p=345,180");
         }
     connections:
+        // clinet
         for i=0..sizeof(c)-1 {
             routing.cout[i] --> cq[i].in;
             routing.cin[i] <-- cq[i].out;
             c[i] <--> cq[i].line;
         }
+        // data server and dsscheduler
         for i=0..sizeof(ds)-1 {
             routing.dsout[i] --> dsq[i].in;
             routing.dsin[i] <-- dsq[i].out;
             ds[i] <--> dsq[i].line;
+            
+            routing.dsschout[i] --> dsschq[i].in;
+            routing.dsschin[i] <-- dsschq[i].out;
+            dssch[i] <--> dsschq[i].line;
         }
+        // metadata server
         routing.msout --> msq.in;
         routing.msin <-- msq.out;
         ms <--> msq.line;

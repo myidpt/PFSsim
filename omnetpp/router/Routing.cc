@@ -27,7 +27,13 @@ void Routing::handleMessage(cMessage *msg)
 		send(msg, "cout", ((qPacket *)msg)->getId() / CLIENT_INDEX);
 		break;
 	case JOB_REQ:
+		send(msg, "dsschout", ((gPacket *)msg)->getDecision());
+		break;
+	case JOB_DISP:
 		send(msg, "dsout", ((gPacket *)msg)->getDecision());
+		break;
+	case JOB_FIN:
+		send(msg, "dsschout", ((gPacket *)msg)->getDecision());
 		break;
 	case JOB_RESP:
 		send(msg, "cout", ((gPacket *)msg)->getId() / CLIENT_INDEX);

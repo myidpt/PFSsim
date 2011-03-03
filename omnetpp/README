@@ -1,3 +1,28 @@
+v0.13
+1. Decoupled the scheduler module from the data server module. The scheduler module(dssch) and the data server module are both connected to the router module, but users are able to set low-latency connections between scheduler module and router if the users want to simulate the scenarios that the scheduler and the data servers are very near (or even on the same machine).
+2. The data server module is made to be a compound module. It consists of 3 simple modules: dsd(data server daemon), lfs(local file system) and disk. The following is the module/communication graph of the ds (dsta server) module:
+      +----------+
+mdl:  |  Router  |
+      +----------+
+msg:  JOB_DISP/FIN
+      +----------+    \
+mdl:  |  ds:dsd  |    |
+      +----------+    |
+msg: LFILE_REQ/RESP   |
+      +----------+    |
+mdl:  |  ds:lfs  |    | The data server module.
+      +----------+    |
+msg:  BLK_REQ/RESP    | 
+      +----------+    |
+mdl:  |  ds:disk |    |
+      +----------+    /
+    <TCP connection>
+  [ Disksim  process ]
+submodules:
+dsd: no key feature implemented yet.
+lfs: provides mapping from {app_id, offset} to {blk_offset}. Maintains the cache module for data server local file system data caching. The cache module is not featured yet.
+disk: communicates with the Disksim process.
+---------------------------------------
 v0.12
 Update Feb.24,2011
 Cleaned some algorithm code, only left FIFO and SFQ.
