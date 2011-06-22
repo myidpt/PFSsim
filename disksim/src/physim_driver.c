@@ -11,13 +11,12 @@
 #include "disksim_rand48.h"
 
 static SysTime now = 0;		/* current time */
-static SysTime next_internal_event = -1;	/* next event */
+static SysTime next_internal_event = 0;	/* next event */
 static Stat st;
 FILE * outstream = NULL;
 long finishedjobid = -1;
 double finishtime = 0.0;
 FILE * dfp = NULL;
-int portno = 0;
 
 void add_statistics(Stat *s, double x)
 {
@@ -84,7 +83,7 @@ int main(int argc, char *argv[])
   struct disksim_interface *disksim;
   struct disksim_request * r;
 
-  int sockfd, newsockfd, clilen;
+  int sockfd, newsockfd, portno, clilen;
   struct sockaddr_in serv_addr, cli_addr;
   int n; //measure sent bytes
 
@@ -153,34 +152,30 @@ int main(int argc, char *argv[])
       fprintf(stderr, "Error: socket read.\n");
       break;
     }
-   
-		printf("%d: ----------\n",portno);	
-    printf("%d: Received: %ld %lf\n%d: Next_internal_event = %lf\n", portno, syncrecv->id, syncrecv->time, 
-				portno, next_internal_event);
+    
+//    printf("Received: %ld %lf\nNext_internal_event = %lf\n", syncrecv->id, syncrecv->time, MS_TO_S(next_internal_event));
     fflush(stdout);
 
     if(syncrecv->id < 0){ // End of simulation
-      fprintf(dfp, "%d: Received end signal. End of simulation.\n", portno);
+//      fprintf(dfp, "Received end signal. End of simulation.\n");
       break;
-    } 
-
-    if(syncrecv->id == 0){
+    }
+    else if(syncrecv->id == 0){
       // ***************************************************
       // id == 0. No new job now. Send synchronization message.
       // If a job is finished, its id will be sent out. Or it will send id=0 to do synchronization.
       // ***************************************************
       
       if(next_internal_event < 0){
-        fprintf(stderr, "%d: ERROR: I did not send sync message, but I receive the sync message reply now\n", portno);
+        fprintf(stderr, "ERROR: next_internal_event < 0\n");
         return -1;
       }
-      while(1){ // In the time interval (Disksim.now, OMNeT++.now), do all the things in disksim.
+      while(MS_TO_S(next_internal_event) <= (syncrecv->time+0.0000001)){ // In the time interval (Disksim.now, OMNeT++.now), do all the things in disksim.
         now = next_internal_event;
-        next_internal_event = S_TO_MS(-1);
-//        finishedjobid = -1; // set finishedjobid to -1.
-        
+        next_internal_event = S_TO_MS(-1); // Set to invalid
+
 //        printf("Next_internal. now = %lf\n", now);
-//        fflush(stdout);
+        fflush(stdout);
 				disksim_interface_internal_event(disksim, now, 0); // Invoke next event.
         while(busy == DEGREE && finishedjobid <= 0){
 					now = next_internal_event;
@@ -188,42 +183,39 @@ int main(int argc, char *argv[])
 					disksim_interface_internal_event(disksim, now, 0); // Invoke next event.
 				}
          
+        
         // Have finished jobs.
-				if(finishedjobid > 0){
+        if(finishedjobid > 0){
           syncsendjob->time = MS_TO_S(finishtime);
           syncsendjob->fid = finishedjobid; // Get the real job id.
      
-         // if(syncsendjob->fid % 20 == 0){ // Just print information.
+          if(syncsendjob->fid % 20 == 0){ // Just print information.
             printf("%d: #%ld job finished.\n", portno, syncsendjob->fid);
             fflush(stdout);
-         // }
+          }
             
           n = write(newsockfd, syncsendjob, sizeof(struct syncjobreply_type));
 					busy --;
           
-          printf("%d: Write: %ld %lf\n", portno, syncsendjob->fid, syncsendjob->time);
-					fflush(stdout);
+//          printf("Write: %ld %lf\n", syncsendjob->fid, syncsendjob->time);
 
           if (n < 0){
-            fprintf(stderr, "%d: Error: socket write.\n", portno);
+            fprintf(stderr, "Error: socket write.\n");
             return -1;
           }
           finishedjobid = -1;
         }
 
+        
         // If next_internal_event < 0, no more future events.
-        if (next_internal_event >= syncrecv->time // sync to the future
-						|| next_internal_event < 0){ // wait for future jobs
+        if (next_internal_event < 0) 
           break;
-        }else{
-          // OMNET++ time is in advance. Disksim must do more actions to catch up.
-        }
       }
      
-      syncsendnojob->time = MS_TO_S(next_internal_event);
+      syncsendnojob->time = MS_TO_S(next_internal_event); // It can be a sync message (time > 0) or a message indicating no more future events (time < 0).
       n = write(newsockfd, syncsendnojob, sizeof(struct syncjobreply_type));// Send Nojob syncreply.
       
-      printf("%d: Write: %ld %lf\n", portno, syncsendnojob->fid, syncsendnojob->time);
+//      printf("Write: %ld %lf\n", syncsendnojob->fid, syncsendnojob->time);
       fflush(stdout);
 
       if (n < 0){
@@ -239,18 +231,15 @@ int main(int argc, char *argv[])
       r->id = syncrecv->id;
       r->flags = syncrecv->read;
       r->devno = 0;
-      r->blkno = syncrecv->off / BLOCK;
-      r->bytecount = syncrecv->len;
-      if(syncrecv->len < MIN_ACCESS_SIZE)
-        r->bytecount = MIN_ACCESS_SIZE;
+      r->blkno = syncrecv->off;
+      r->bytecount = syncrecv->len * BLOCK;
       r->start = S_TO_MS(syncrecv->time);
-      printf("%d: Req_arrive.id = %ld, blkno = %ld, bytecount = %d, start = %lf\n", 
-					portno, r->id, r->blkno, r->bytecount, r->start);
+//      printf("Req_arrive.id = %ld, blkno = %ld, bytecount = %d, start = %lf\n", r->id, r->blkno, r->bytecount, r->start);
       fflush(stdout);
       disksim_interface_request_arrive(disksim, r->start, r);
 			busy ++;
-      printf("%d: Job submitted. %ld %lf\n", portno, r->id, r->start);
-      printf("%d: next = %lf\n", portno, next_internal_event);
+//      printf("Job submitted. %ld %lf\n", r->id, r->start);
+//      printf("next = %lf\n", next_internal_event);
       fflush(stdout);
       syncrecv->time = -1; // In new job, the time is not for sync.
     }

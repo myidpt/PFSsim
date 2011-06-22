@@ -3,10 +3,10 @@
 #define MIN_ACCESS_SIZE     512
 #define SYNC_SIZE        24 // The size of the synchronization message.
 /* OMNet++ uses second as time unit, while disksim uses millisecond as time unit. */
-#define AMPLIFY (10)
+#define AMPLIFY (16000)
 #define S_TO_MS(time)    (time*AMPLIFY)
 #define MS_TO_S(time)    (time/AMPLIFY)
-#define DEGREE 1
+#define DEGREE 2
 
 typedef	double SysTime;		/* system time in seconds.usec */
 typedef	struct	{
