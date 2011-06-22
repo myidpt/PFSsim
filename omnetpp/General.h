@@ -8,12 +8,14 @@
 #ifndef GENERAL_H_
 #define GENERAL_H_
 #include "client/Clientspecs.h"
-#include "server/DServerspecs.h"
+#include "dserver/DServerspecs.h"
 #include "scheduler/DSschedulerspecs.h"
 #include "packet/GPacket_m.h"
 #include "packet/SPacket_m.h"
 #include "packet/QPacket_m.h"
-#include "utility/Cache.h"
+#include "cache/ICache.h"
+#include "cache/NRU.h"
+#include "layout/Layout.h"
 
 #define SMALLDBL 0.000001
 
@@ -21,7 +23,7 @@
 
 #define REQ_MAXSIZE 0x40000000 // According to PVFS 0x40000000, 1GB
 #define JOB_MAXSIZE 0xa00000 // According to PVFS 0xa00000, 10MB
-#define LOWOFFSET_RANGE 0x80000000 // offset = lowoffset + lowoffset_range * highoffset
+#define LOWOFFSET_RANGE 0x800000 // offset = lowoffset + lowoffset_range * highoffset
 
 // For messages types
 #define SELF_EVENT	0
@@ -35,6 +37,8 @@
 #define LFILE_RESP	8
 #define JOB_FIN		9
 #define JOB_RESP 	10
+#define SCH_JOB		11
+#define REQ_SYN		12
 #define W_CACHE_JOB_DONE	17 // When the job is done by committing to the cache.
 #define W_DISK_JOB_DONE		18
 #define R_CACHE_JOB_DONE	19

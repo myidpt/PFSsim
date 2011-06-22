@@ -3,35 +3,43 @@
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-//
+// 
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
-//
+// 
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see http://www.gnu.org/licenses/.
+// 
+
 //
+// TODO auto-generated module
+//
+package dserver;
 
-#ifndef DSSCHEDULER_H_
-#define DSSCHEDULER_H_
-#include "../General.h"
-
-#include "FIFO.h"
-#include "SFQ.h"
-
-class DSscheduler : public cSimpleModule{
-protected:
-	IQueue * queue;
-public:
-	DSscheduler();
-	void initialize();
-	void handleNewJob(gPacket *);
-	void handleFinishedJob(gPacket *);
-	void dispatchJobs();
-	void sendSafe(gPacket *);
-	void handleMessage(cMessage *);
-	virtual ~DSscheduler();
-};
-
-#endif /* DSSCHEDULER_H_ */
+module Dserver
+{
+    parameters:
+        @display("i=device/server");
+        bool sendInitialMessage = false;
+    gates:
+        inout g;
+    submodules:
+        dsd: DSdaemon {
+            parameters:
+                @display("p=137,52");
+        }
+        lfs: LocalFS {
+            parameters:
+                @display("p=136,155");
+        }
+        disk: Disk {
+            parameters:
+                @display("p=137,258");
+        }
+    connections:
+        g <--> dsd.eth;
+        dsd.lfs <--> lfs.dsd;
+        lfs.disk <--> disk.g;
+}

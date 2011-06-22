@@ -19,54 +19,54 @@ Define_Module(Client);
 void Client::initialize()
 {
 	myId = getId() - C_ID_BASE;
-	curId = CLIENT_INDEX * (getId() - C_ID_BASE) + 1; // ID is valid from 1.
+	pktId = CLIENT_INDEX * (getId() - C_ID_BASE) + 1; // ID is valid from 1.
 	traceEnd = false;
 
-	char fname[16] = {'t','r','a','c','e','s','/',
+	char tfname[16] = {'t','r','a','c','e','s','/',
 			't','r','a','c','e','0','0','0','\0'};
-	fname[12] = myId/100 + '0';
-	fname[13] = myId%100/10 + '0';
-	fname[14] = myId%10 + '0';
-	if( (fp = fopen(fname, "r")) == NULL){
-		fprintf(stderr, "Trace file open failure: %s\n", fname);
+	tfname[12] = myId/100 + '0';
+	tfname[13] = myId%100/10 + '0';
+	tfname[14] = myId%10 + '0';
+	if( (tfp = fopen(tfname, "r")) == NULL){
+		fprintf(stderr, "Trace file open failure: %s\n", tfname);
 		deleteModule();
 	}
 
-	char sfname[18] = {'r','e','s','u','l','t','s','/',
+	char rfname[18] = {'r','e','s','u','l','t','s','/',
 			'r','e','s','u','l','t','0','0','0','\0'};
-	sfname[14] = myId/100 + '0';
-	sfname[15] = myId%100/10 + '0';
-	sfname[16] = myId%10 + '0';
-	if( (sfp = fopen(sfname, "w+")) == NULL){
-		fprintf(stderr, "Result file open failure: %s\n", fname);
+	rfname[14] = myId/100 + '0';
+	rfname[15] = myId%100/10 + '0';
+	rfname[16] = myId%10 + '0';
+	if( (rfp = fopen(rfname, "w+")) == NULL){
+		fprintf(stderr, "Result file open failure: %s\n", rfname);
 		deleteModule();
 	}
-	requestSync = new cMessage("reqArrivalTime");
+	requestSync = new gPacket();
+	requestSync->setKind(REQ_SYN);
 
-	process_time = C_PROC_TIME;
 	request = NULL;
+	reqId = 0;
 
 	readNextReq(); // Start Simulation.
 }
 
 void Client::handleMessage(cMessage *cmsg)
 {
-	if(cmsg == requestSync){ // Time for a new request.
-		sendLayoutQuery(request);
-		return;
-	}
 	switch(cmsg->getKind()){
+	case REQ_SYN: // Time for creating a new request.
+		sendLayoutQuery();
+		break;
 	case SELF_EVENT: // If not driven by the completion of previous job, self-driven.
 		sendJobPacket((gPacket *)cmsg);
-		scheduleNextPackets();
 		break;
 	case LAYOUT_RESP: // layout information
 		handleLayoutResponse((qPacket *)cmsg);
-		scheduleNextPackets();
 		break;
 	case JOB_RESP: // Job finished. Result from data server
 		handleFinishedPacket((gPacket *)cmsg);
 		break;
+	default:
+		fprintf(stderr, "ERROR Client #%d: Unknown message type %d", myId, cmsg->getKind());
 	}
 }
 
@@ -75,13 +75,14 @@ int Client::readNextReq(){
 	if(traceEnd)
 		return -1;
 	if(requestSync->isScheduled()){
+//		printf("Scheduled - at %lf\n",requestSync->getSendingTime());
+//		fflush(stdout);
 		return 0; // Already done this.
 	}
 
-	char line[201];
 	if(SIMTIME_DBL(simTime()) > MAX_TIME){
-		fprintf(stdout, "You reached the max time.\n");
-		fclose(fp);
+		fprintf(stdout, "You reached the simulation max time limit: %d.\n", MAX_TIME);
+		fclose(tfp);
 		traceEnd = true;
 		return -1;
 	}
@@ -92,12 +93,19 @@ int Client::readNextReq(){
 	int read;
 	int appid;
 	int sync;
-	// If sync, you can only issue the current request when you have finished the previous one.
-	// Otherwise, you issue the current request according to the "time" argument.
+	char line[201];
+
+	// A request may be driven by the finish of the previous request (when the sync mark is set), or be driven by a time stamp.
+	// If the sync mark is set, it will immediately process the current request when the previous one is finished.
+	// Otherwise, the current request will be processed according to the "time" argument.
+	// Note that currently we do not support processing multiple requests concurrently on a single client,
+	// so if the request is driven by a time stamp, the request will be processed at the latter one of the finish time
+	// of the previous request and the time stamp of this request in the trace file.
+
 	while(1){
-		if(fgets(line, 200, fp) == NULL){
-			fprintf(stdout, "You reached the end of the trace file.\n");
-			fclose(fp);
+		if(fgets(line, 200, tfp) == NULL){
+			fprintf(stdout, "CLIENT #%d: Reach the end of the trace file.\n", myId);
+			fclose(tfp);
 			traceEnd = true;
 			return -1;
 		}
@@ -109,44 +117,46 @@ int Client::readNextReq(){
 			&time, &offset, &size, &read, &appid, &sync);
 
 	if(size > REQ_MAXSIZE){
-		fprintf(stderr, "%lf %lld %d %d\n", time, offset, size, read);
-		fprintf(stderr, "Size %d is bigger than REQ_MAXSIZE %d.\n", size, REQ_MAXSIZE);
+		fprintf(stderr, "ERROR Client #%d: Size %d is bigger than REQ_MAXSIZE %d, set it to be REQ_MAXSIZE.\n",
+				myId, size, REQ_MAXSIZE);
 		size = REQ_MAXSIZE;
 	}
 
-	if(sync == 1)
-		time = SIMTIME_DBL(simTime()) + process_time;
-	request = new Request(time, offset, size, read, appid, sync);
+	if(sync == 1 || (time < SIMTIME_DBL(simTime()) + C_REQ_PROC_TIME))
+		time = SIMTIME_DBL(simTime()) + C_REQ_PROC_TIME;
+
+	request = new Request(reqId++, time, offset, size, read, appid, sync);
 	scheduleAt(time, requestSync);
 
 	return 1;
 }
 
 // Return -1 if all the requests are done.
-// Return 0 if there are still packets to receive.
-// Return 1 if the packet is scheduled.
+// Return 0 if can't schedule more packets at this moment.
+// Return 1 if a new packet is scheduled.
 // Return 2 if the request needs to query the layout.
 int Client::scheduleNextPackets(){
-	if(request == NULL) { // At the beginning, or just finished a request.
+	if(request == NULL) { // At the start, or just finished a request.
 		if(readNextReq() == -1)
 			return -1; // All requests are done.
-		return 2;
+		return 2; // Wait for requestSync to query the layout.
 	}
 	gPacket * gpkt = request->nextgPacket();
 	if(gpkt == NULL)
-		return 0; // No more packets in the window.
+		return 0; // Can't schedule more at this moment.
 
-	gpkt->setId(curId);
-	gpkt->setRisetime(SIMTIME_DBL(simTime()) + process_time);
+	gpkt->setId(pktId);
+	gpkt->setRisetime(SIMTIME_DBL(simTime()) + C_PKT_PROC_TIME);
 	gpkt->setKind(SELF_EVENT);
-	curId ++;
+
+	pktId ++;
 	scheduleAt((simtime_t)(gpkt->getRisetime()), gpkt);
 	return 1;
 }
 
-int Client::sendLayoutQuery(Request * request){
+int Client::sendLayoutQuery(){
 	qPacket * qpkt = new qPacket("qpacket");
-	qpkt->setId(curId);
+	qpkt->setId(pktId);// Important, other wise the response packet won't know where to be sent.
 	qpkt->setApp(request->getApp());
 	qpkt->setKind(LAYOUT_REQ);
 	qpkt->setByteLength(100); // schedule query: assume Length 100.
@@ -157,31 +167,34 @@ int Client::sendLayoutQuery(Request * request){
 void Client::handleLayoutResponse(qPacket * qpkt){
 	request->setLayout(qpkt);
 	delete qpkt;
+	scheduleNextPackets();
 }
 
-int Client::sendJobPacket(gPacket * gpkt){
-	printf("%d: sendJobPacket-%ld\n", myId, gpkt->getId());
-	fflush(stdout);
+
+void Client::sendJobPacket(gPacket * gpkt){
+	if(gpkt->getDecision() == UNSCHEDULED){
+		fprintf(stderr, "ERROR: the packet is UNSCHEDULED.");
+		return;
+	}
 	gpkt->setKind(JOB_REQ);
-	gpkt->setByteLength(100 + gpkt->getSize()); // Assume job length 100 + size. (write)
-	if(gpkt->getDecision() == UNSCHEDULED)
-		return -1;
+	if(gpkt->getRead() == 0) // Write operation, the packet size is (assumed) 100 + data size
+		gpkt->setByteLength(100 + gpkt->getSize());
 	gpkt->setSubmittime(SIMTIME_DBL(simTime()));
 	sendSafe(gpkt);
-	return 1;
+	scheduleNextPackets();
 }
 
 void Client::handleFinishedPacket(gPacket * gpkt){
 	gpkt->setReturntime(SIMTIME_DBL(simTime()));
 	pktStatistic(gpkt);
 	int ret = request->finishedgPacket(gpkt);
-	// gpkt is deleted here.
-	if(ret == -1){
+	delete gpkt;
+	if(ret == 2){ // All done for this request.
 		reqStatistic(request);
 		delete request;
-		request = NULL;
-		readNextReq(); // set up future event
-	}else if(ret == 1){ // You have done the current window, call nextPacket.
+		request = NULL; // Mark that the current request is done.
+		readNextReq(); // set up future event: read next request.
+	}else if(ret == 1){ // You have done the current window, schedule next packets.
 		scheduleNextPackets(); // set up future event
 	}
 }
@@ -198,17 +211,18 @@ void Client::sendSafe(cMessage * cmsg){
 
 // General information
 void Client::reqStatistic(Request * request){
-	fprintf(sfp, "%lf %lf %lld %ld %d\n",
-		request->getStarttime(),
-		request->getFinishtime(),
-		request->getOffset(),
-		request->getSize(),
-		request->getApp());
+	fprintf(rfp, "Request #%d: %d %lld %ld {%lf %lf}\n",
+			request->getId(),
+			request->getApp(),
+			request->getOffset(),
+			request->getSize(),
+			request->getStarttime(),
+			request->getFinishtime());
 }
 
 // General information
 void Client::pktStatistic(gPacket * gpkt){
-	fprintf(sfp, "\t%ld %lld %d %d %d %d\n"
+	fprintf(rfp, "   Packet #%ld: %lld %d %d %d %d\n"
 			"\t\t%lf %lf %lf %lf %lf\n",
 			gpkt->getId(),
 			(long long)(gpkt->getLowoffset() + gpkt->getHighoffset() * LOWOFFSET_RANGE),
@@ -228,13 +242,13 @@ void Client::pktStatistic(gPacket * gpkt){
 void Client::statistic(gPacket * gpkt){
 	double proc = gpkt->getFinishtime() - gpkt->getDispatchtime();
 	stat_time += proc;
-	fprintf(sfp, "%ld\t%lf\t%lf\n", gpkt->getId(), proc, stat_time);
+	fprintf(rfp, "%ld\t%lf\t%lf\n", gpkt->getId(), proc, stat_time);
 }
 */
 //Throughput and Delay information
 /*
 void Client::statistic(gPacket * gpkt){
-	fprintf(sfp, "%lf %lf %lf %lf %lf\n",
+	fprintf(rfp, "%lf %lf %lf %lf %lf\n",
 		gpkt->getRisetime(),
 		gpkt->getArrivaltime() - gpkt->getSubmittime(), // Arrivaltime : time is in lower case. (not ArrivalTime!)
 		gpkt->getDispatchtime() - gpkt->getArrivaltime(),
@@ -244,6 +258,6 @@ void Client::statistic(gPacket * gpkt){
 */
 
 void Client::finish(){ // close result files
-	fclose(sfp); // close files
+	fclose(rfp); // close files
 	cancelAndDelete(requestSync);
 }

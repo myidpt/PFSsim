@@ -18,8 +18,8 @@
 //
 // DatarateChannel
 import client.Client;
-import server.Dserver;
-import server.Mserver;
+import dserver.Dserver;
+import mserver.Mserver;
 import router.Router;
 import scheduler.DSscheduler;
 
@@ -58,7 +58,7 @@ network pfs
             parameters:
                 @display("p=353,146");
         }
-        router: Router {
+        switch: Router {
             parameters:
                 @display("p=189,146");
             gates:
@@ -69,15 +69,15 @@ network pfs
     connections:
         // C-Router channels
         for i=0..numClients-1 {
-            c[i].g <--> Channel <--> router.c[i];
+            c[i].g <--> Channel <--> switch.c[i];
         }
 
         // Router-DS and Router-DSscheduler channels
         for i=0..numDServers-1 {
-            router.ds[i] <--> Channel <--> ds[i].g;
-            router.dssch[i] <--> Channel <--> dssch[i].g;
+            switch.ds[i] <--> Channel <--> ds[i].g;
+            switch.dssch[i] <--> Channel <--> dssch[i].g;
         }
 
         // MS-Router channels
-        ms.g <--> Channel <--> router.ms;
+        ms.g <--> Channel <--> switch.ms;
 }

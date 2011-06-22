@@ -13,25 +13,26 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 //
 
-#ifndef DSSCHEDULER_H_
-#define DSSCHEDULER_H_
+#ifndef __MSERVER_H__
+#define __MSERVER_H__
+
+#include <time.h>
+#include <math.h>
+#include <omnetpp.h>
 #include "../General.h"
+#include "../layout/Layout.h"
 
-#include "FIFO.h"
-#include "SFQ.h"
-
-class DSscheduler : public cSimpleModule{
-protected:
-	IQueue * queue;
-public:
-	DSscheduler();
-	void initialize();
-	void handleNewJob(gPacket *);
-	void handleFinishedJob(gPacket *);
-	void dispatchJobs();
-	void sendSafe(gPacket *);
-	void handleMessage(cMessage *);
-	virtual ~DSscheduler();
+class Mserver : public cSimpleModule{
+  private:
+	Layout * layoutlist[MAX_APP];
+	int appNum;
+	virtual void parseLayoutDoc(const char * fname);
+  protected:
+	virtual void initialize();
+	virtual void handleMessage(cMessage *msg);
+	virtual void handleLayoutReq(qPacket *qpkt);
+	virtual void sendSafe(cMessage *);
+	virtual ~Mserver();
 };
 
-#endif /* DSSCHEDULER_H_ */
+#endif

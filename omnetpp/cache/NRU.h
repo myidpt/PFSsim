@@ -13,25 +13,24 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 //
 
-#ifndef DSSCHEDULER_H_
-#define DSSCHEDULER_H_
-#include "../General.h"
+#ifndef NRU_H_
+#define NRU_H_
 
-#include "FIFO.h"
-#include "SFQ.h"
+#include "ICache.h"
 
-class DSscheduler : public cSimpleModule{
-protected:
-	IQueue * queue;
+class NRU: public ICache {
+private:
+	struct ICache::pr_type * rwCache(struct pr_type * pr);
+	ICache::pr_type * prePageTable; // Only useful internally. No meaning.
 public:
-	DSscheduler();
-	void initialize();
-	void handleNewJob(gPacket *);
-	void handleFinishedJob(gPacket *);
-	void dispatchJobs();
-	void sendSafe(gPacket *);
-	void handleMessage(cMessage *);
-	virtual ~DSscheduler();
+	NRU(int, int);
+	virtual struct ICache::pr_type * readCache(struct pr_type * pr);
+	virtual void writeCache(struct pr_type * pr);
+	virtual struct pr_type * flushCache();
+	virtual long mergePTandGetSize();
+	virtual void resetRefFlag();
+	virtual void printPageTable();
+	virtual ~NRU();
 };
 
-#endif /* DSSCHEDULER_H_ */
+#endif /* NRU_H_ */

@@ -20,38 +20,33 @@
 #include <stdlib.h>
 #include <string.h>
 #include <omnetpp.h>
-#include "General.h"
-#include "request/Request.h"
+#include "../General.h"
+#include "../request/Request.h"
 
-class Client : public cSimpleModule
-{
+class Client : public cSimpleModule{
 private:
 	int ms;
-	FILE * fp;
-	FILE * sfp;
-	long curId;
-	int myId;
+	FILE * tfp; // trace file pointer
+	FILE * rfp; // result file pointer
+	long pktId; // This ID increments, it is the ID of the sent packet.
+	int myId; // The ID of this client
 	bool traceEnd;
-	// Stands for the synchronization prob., which is the prob. that one job is only submitted
-	// upon finishing of the previous job.
-	// The processing time between receiving of previous job and submission of this job.
-	// Only used in synchronized mode.
-	double process_time;
-	Request * request;
-	cMessage * requestSync;
+	Request * request; // Request is one entry in the trace file; it may be divided into smaller jobs.
+	gPacket * requestSync;
+	int reqId;
 
 protected:
 	virtual void initialize();
 	virtual void handleMessage(cMessage *msg);
-	int sendJobPacket(gPacket *);
-	int sendLayoutQuery(Request *);
-	void handleLayoutResponse(qPacket *);
-	int scheduleNextPackets();
-	int readNextReq();
-	void handleFinishedPacket(gPacket *);
-	void pktStatistic(gPacket *);
-	void reqStatistic(Request *);
-	void sendSafe(cMessage *);
+	virtual void sendJobPacket(gPacket *);
+	virtual int sendLayoutQuery();
+	virtual void handleLayoutResponse(qPacket *);
+	virtual int scheduleNextPackets();
+	virtual int readNextReq();
+	virtual void handleFinishedPacket(gPacket *);
+	virtual void pktStatistic(gPacket *);
+	virtual void reqStatistic(Request *);
+	virtual void sendSafe(cMessage *);
 	virtual void finish();
 };
 

@@ -6,7 +6,6 @@
 #ifndef __CLINETSPECS_H__
 #define __CLINETSPECS_H__
 
-// when you change C_TOTAL, remember the W_X, SYNC_X and CLITIME_X macros!
 #define C_TOTAL 32 // Client total number
 #define MAX_APP C_TOTAL // Max number of applications / flows
 #define APP_TOTAL 1 // App total number
@@ -16,7 +15,8 @@
 
 #define MAX_JOB_SIZE 4096 * 512 // According to Disksim
 
-#define C_PROC_TIME 0.00003
+#define C_REQ_PROC_TIME 0.00003 // The processing time between requests.
+#define C_PKT_PROC_TIME 0.000005 // The processing time between packets.
 
 // Weight of applications / clients
 // Weight bigger-> higher priority

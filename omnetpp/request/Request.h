@@ -15,44 +15,51 @@
 
 #ifndef REQUEST_H_
 #define REQUEST_H_
-#include "General.h"
+
+#include "../General.h"
+#include "../layout/Layout.h"
 #define MAX_WINDOW_SIZE JOB_MAXSIZE
 // This class only represents one request from the client, it may be divided into multiple packets.
 class Request : public cNamedObject {
 private:
-	long long offset;
-	long windowsizeInByte; // Pre-determined. Don't change in the middle.
-	int window[MAX_DS_NUM]; // The window for the packets waiting for reply. 0: unsent, 1: sent, 2: received.
-	int windowSize; // number of DServer storing this requested data.
-	long long index; // current offset in the data, before which you have already finished.
+	int myId;
+	long long offset; // The offset (start edge) of the entire data.
+	long long dsoffsets[MAX_DS_NUM]; // The offset of the data stored on each data server.
+	long serverWindow[MAX_DS_NUM]; // The window for the packets waiting for reply.
+	// >0: unsent (the quantity indicates the data amount), 0: sent, -1: received, -2: data not stored on this dserver.
+	long size; // The total size of the data.
+	long unProcessedSize; // The size of the data whose packets are still not put into the window.
+	Layout * layout; // Specifies the layout of the data.
 /*
  * Explanation of data transmission process.
  *             offset           index   window
  * --------------[++++++++++++++++|****************|====================]----------------
  * <- unwanted ->|<-  finished  ->|<-transmitting->|<-  not sent yet  ->|<-  unwanted  ->
+ *               |<------------------------size------------------------>|
  *
  */
 	int read;
 	int app;
 	double stime;
 	double ftime;
-	long size;
 	int sync;
 
-	int dsList[MAX_DS_NUM]; // the list of DServers storing this requested data.
+	gPacket * getNextgPacketFromWindow();
+//	int dsList[MAX_DS_NUM]; // the list of DServers storing this requested data.
 
 public:
-	Request(double stime, long long offset, long size, int read, int app, int sync);
+	Request(int id, double stime, long long offset, long size, int read, int app, int sync);
 	virtual gPacket * nextgPacket();
 	virtual int finishedgPacket(gPacket *);
 	virtual void setLayout(qPacket *);
-	double getStarttime();
-	double getFinishtime();
-	long long getOffset();
-	long getSize();
-	int getRead();
-	int getApp();
-	int getSync();
+	virtual double getStarttime();
+	virtual double getFinishtime();
+	virtual long long getOffset();
+	virtual int getId();
+	virtual long getSize();
+	virtual int getRead();
+	virtual int getApp();
+	virtual int getSync();
 	virtual ~Request();
 };
 

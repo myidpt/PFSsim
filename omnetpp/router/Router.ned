@@ -20,7 +20,7 @@ module Router
     parameters:
         @display("i=device/router");
     gates:
-        inout c[];
+        inout c[]; // The size is defined in pfs.ned.
         inout ds[];
         inout dssch[];
         inout ms;

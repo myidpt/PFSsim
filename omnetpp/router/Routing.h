@@ -17,12 +17,12 @@
 #define __ROUTING_H__
 
 #include <omnetpp.h>
-#include "General.h"
+#include "../General.h"
 
 class Routing : public cSimpleModule
 {
-  protected:
-    virtual void handleMessage(cMessage *msg);
+protected:
+	virtual void handleMessage(cMessage *msg);
 };
 
 #endif

@@ -53,3 +53,6 @@ void Queue::handleMessage(cMessage *msg){
 	}
 }
 
+Queue::~Queue(){
+	delete endTransmissionEvent;
+}

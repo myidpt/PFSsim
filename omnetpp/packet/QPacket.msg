@@ -19,4 +19,5 @@ message qPacket extends cPacket
     int app = -1;
     int dsNum = 0;
     int dsList[1024];
+    long dsShares[1024];
 }

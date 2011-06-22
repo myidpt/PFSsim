@@ -1,12 +1,12 @@
 #
-# OMNeT++/OMNEST Makefile for PFSsim_v0.13
+# OMNeT++/OMNEST Makefile for v0.14
 #
 # This file was generated with the command:
-#  opp_makemake -f --deep -O out
+#  opp_makemake -f --deep
 #
 
 # Name of target to be created (-o option)
-TARGET = PFSsim_v0.13$(EXE_SUFFIX)
+TARGET = v0.14$(EXE_SUFFIX)
 
 # User interface (uncomment one) (-u option)
 USERIF_LIBS = $(ALL_ENV_LIBS) # that is, $(TKENV_LIBS) $(CMDENV_LIBS)
@@ -16,16 +16,18 @@ USERIF_LIBS = $(ALL_ENV_LIBS) # that is, $(TKENV_LIBS) $(CMDENV_LIBS)
 # C++ include paths (with -I)
 INCLUDE_PATH = \
     -I. \
+    -Icache \
     -Iclient \
+    -Iconfig \
+    -Idserver \
+    -Ilayout \
+    -Imserver \
     -Ipacket \
     -Irequest \
     -Iresults \
     -Irouter \
-    -Ischeduleinfo \
     -Ischeduler \
-    -Iserver \
-    -Itraces \
-    -Iutility
+    -Itraces
 
 # Additional object and library files to link with
 EXTRA_OBJS =
@@ -40,28 +42,30 @@ O = $(PROJECT_OUTPUT_DIR)/$(CONFIGNAME)/$(PROJECTRELATIVE_PATH)
 
 # Object files for local .cc and .msg files
 OBJS = \
+    $O/cache/NRU.o \
+    $O/cache/ICache.o \
     $O/client/Client.o \
+    $O/dserver/DSdaemon.o \
+    $O/dserver/LocalFS.o \
+    $O/dserver/Disk.o \
+    $O/layout/Layout.o \
+    $O/mserver/Mserver.o \
     $O/request/Request.o \
-    $O/router/Queue.o \
     $O/router/Routing.o \
-    $O/scheduler/DSscheduler.o \
+    $O/router/Queue.o \
     $O/scheduler/SFQ.o \
+    $O/scheduler/DSscheduler.o \
     $O/scheduler/FIFO.o \
     $O/scheduler/IQueue.o \
-    $O/server/LocalFS.o \
-    $O/server/Mserver.o \
-    $O/server/Disk.o \
-    $O/server/DSdaemon.o \
-    $O/utility/Cache.o \
+    $O/packet/SPacket_m.o \
     $O/packet/GPacket_m.o \
-    $O/packet/QPacket_m.o \
-    $O/packet/SPacket_m.o
+    $O/packet/QPacket_m.o
 
 # Message files
 MSGFILES = \
+    packet/SPacket.msg \
     packet/GPacket.msg \
-    packet/QPacket.msg \
-    packet/SPacket.msg
+    packet/QPacket.msg
 
 #------------------------------------------------------------------------------
 
@@ -100,10 +104,10 @@ MSGCOPTS = $(INCLUDE_PATH)
 all: $(TARGET)
 
 $(TARGET) : $O/$(TARGET)
-	$(LN) $O/$(TARGET) .
+	ln -s -f $O/$(TARGET) .
 
 $O/$(TARGET): $(OBJS)  $(wildcard $(EXTRA_OBJS)) Makefile
-	@$(MKPATH) $O
+	@mkdir -p $O
 	$(CXX) $(LDFLAGS) -o $O/$(TARGET)  $(OBJS) $(EXTRA_OBJS) $(WHOLE_ARCHIVE_ON) $(LIBS) $(WHOLE_ARCHIVE_OFF) $(OMNETPP_LIBS)
 
 .PHONY:
@@ -111,7 +115,7 @@ $O/$(TARGET): $(OBJS)  $(wildcard $(EXTRA_OBJS)) Makefile
 .SUFFIXES: .cc
 
 $O/%.o: %.cc
-	@$(MKPATH) $(dir $@)
+	@mkdir -p $(dir $@)
 	$(CXX) -c $(COPTS) -o $@ $<
 
 %_m.cc %_m.h: %.msg
@@ -121,154 +125,68 @@ msgheaders: $(MSGFILES:.msg=_m.h)
 
 clean:
 	-rm -rf $O
-	-rm -f PFSsim_v0.13 PFSsim_v0.13.exe libPFSsim_v0.13.so libPFSsim_v0.13.a libPFSsim_v0.13.dll libPFSsim_v0.13.dylib
+	-rm -f v0.14 v0.14.exe libv0.14.so libv0.14.a libv0.14.dll libv0.14.dylib
 	-rm -f ./*_m.cc ./*_m.h
+	-rm -f cache/*_m.cc cache/*_m.h
 	-rm -f client/*_m.cc client/*_m.h
+	-rm -f config/*_m.cc config/*_m.h
+	-rm -f dserver/*_m.cc dserver/*_m.h
+	-rm -f layout/*_m.cc layout/*_m.h
+	-rm -f mserver/*_m.cc mserver/*_m.h
 	-rm -f packet/*_m.cc packet/*_m.h
 	-rm -f request/*_m.cc request/*_m.h
 	-rm -f results/*_m.cc results/*_m.h
 	-rm -f router/*_m.cc router/*_m.h
-	-rm -f scheduleinfo/*_m.cc scheduleinfo/*_m.h
 	-rm -f scheduler/*_m.cc scheduler/*_m.h
-	-rm -f server/*_m.cc server/*_m.h
 	-rm -f traces/*_m.cc traces/*_m.h
-	-rm -f utility/*_m.cc utility/*_m.h
 
 cleanall: clean
 	-rm -rf $(PROJECT_OUTPUT_DIR)
 
 depend:
-	$(MAKEDEPEND) $(INCLUDE_PATH) -f Makefile -P\$$O/ -- $(MSG_CC_FILES)  ./*.cc client/*.cc packet/*.cc request/*.cc results/*.cc router/*.cc scheduleinfo/*.cc scheduler/*.cc server/*.cc traces/*.cc utility/*.cc
+	$(MAKEDEPEND) $(INCLUDE_PATH) -f Makefile -P\$$O/ -- $(MSG_CC_FILES)  ./*.cc cache/*.cc client/*.cc config/*.cc dserver/*.cc layout/*.cc mserver/*.cc packet/*.cc request/*.cc results/*.cc router/*.cc scheduler/*.cc traces/*.cc
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
+$O/cache/ICache.o: cache/ICache.cc \
+	cache/ICache.h
+$O/cache/NRU.o: cache/NRU.cc \
+	cache/NRU.h \
+	cache/ICache.h
 $O/client/Client.o: client/Client.cc \
-	utility/Cache.h \
-	request/Request.h \
-	packet/GPacket_m.h \
-	packet/QPacket_m.h \
-	server/DServerspecs.h \
-	packet/SPacket_m.h \
-	scheduler/DSschedulerspecs.h \
-	client/Clientspecs.h \
-	General.h \
 	client/Client.h
-$O/packet/QPacket_m.o: packet/QPacket_m.cc \
-	packet/QPacket_m.h
+$O/dserver/LocalFS.o: dserver/LocalFS.cc \
+	dserver/LocalFS.h
+$O/dserver/Disk.o: dserver/Disk.cc \
+	dserver/Disk.h
+$O/dserver/DSdaemon.o: dserver/DSdaemon.cc \
+	dserver/DSdaemon.h
+$O/layout/Layout.o: layout/Layout.cc \
+	layout/Layout.h
+$O/mserver/Mserver.o: mserver/Mserver.cc \
+	mserver/Mserver.h
 $O/packet/SPacket_m.o: packet/SPacket_m.cc \
 	packet/SPacket_m.h
+$O/packet/QPacket_m.o: packet/QPacket_m.cc \
+	packet/QPacket_m.h
 $O/packet/GPacket_m.o: packet/GPacket_m.cc \
 	packet/GPacket_m.h
 $O/request/Request.o: request/Request.cc \
-	utility/Cache.h \
-	request/Request.h \
-	packet/GPacket_m.h \
-	packet/QPacket_m.h \
-	server/DServerspecs.h \
-	packet/SPacket_m.h \
-	scheduler/DSschedulerspecs.h \
-	client/Clientspecs.h \
-	General.h
+	request/Request.h
+$O/router/Routing.o: router/Routing.cc \
+	router/Routing.h
 $O/router/Queue.o: router/Queue.cc \
 	router/Queue.h
-$O/router/Routing.o: router/Routing.cc \
-	utility/Cache.h \
-	packet/GPacket_m.h \
-	packet/QPacket_m.h \
-	router/Routing.h \
-	server/DServerspecs.h \
-	packet/SPacket_m.h \
-	scheduler/DSschedulerspecs.h \
-	client/Clientspecs.h \
-	General.h
-$O/scheduler/SFQ.o: scheduler/SFQ.cc \
-	utility/Cache.h \
-	packet/GPacket_m.h \
-	packet/QPacket_m.h \
-	scheduler/IQueue.h \
-	server/DServerspecs.h \
-	client/Clientspecs.h \
-	scheduler/DSschedulerspecs.h \
-	packet/SPacket_m.h \
-	scheduler/SFQ.h \
-	General.h
+$O/scheduler/FIFO.o: scheduler/FIFO.cc \
+	scheduler/FIFO.h \
+	scheduler/IQueue.h
 $O/scheduler/IQueue.o: scheduler/IQueue.cc \
-	utility/Cache.h \
-	packet/GPacket_m.h \
-	packet/QPacket_m.h \
-	server/DServerspecs.h \
-	scheduler/IQueue.h \
-	packet/SPacket_m.h \
-	scheduler/DSschedulerspecs.h \
-	client/Clientspecs.h \
-	General.h
+	scheduler/IQueue.h
+$O/scheduler/SFQ.o: scheduler/SFQ.cc \
+	scheduler/SFQ.h \
+	scheduler/IQueue.h
 $O/scheduler/DSscheduler.o: scheduler/DSscheduler.cc \
-	utility/Cache.h \
-	packet/GPacket_m.h \
-	packet/QPacket_m.h \
-	scheduler/IQueue.h \
-	server/DServerspecs.h \
-	client/Clientspecs.h \
-	scheduler/DSschedulerspecs.h \
-	packet/SPacket_m.h \
 	scheduler/FIFO.h \
 	scheduler/DSscheduler.h \
 	scheduler/SFQ.h \
-	General.h
-$O/scheduler/FIFO.o: scheduler/FIFO.cc \
-	utility/Cache.h \
-	packet/GPacket_m.h \
-	packet/QPacket_m.h \
-	scheduler/IQueue.h \
-	server/DServerspecs.h \
-	client/Clientspecs.h \
-	scheduler/DSschedulerspecs.h \
-	packet/SPacket_m.h \
-	scheduler/FIFO.h \
-	General.h
-$O/server/Mserver.o: server/Mserver.cc \
-	utility/Cache.h \
-	packet/GPacket_m.h \
-	packet/QPacket_m.h \
-	server/DServerspecs.h \
-	packet/SPacket_m.h \
-	scheduler/DSschedulerspecs.h \
-	client/Clientspecs.h \
-	server/Mserver.h \
-	General.h
-$O/server/Disk.o: server/Disk.cc \
-	utility/Cache.h \
-	packet/GPacket_m.h \
-	packet/QPacket_m.h \
-	server/Disk.h \
-	server/DServerspecs.h \
-	scheduler/IQueue.h \
-	packet/SPacket_m.h \
-	scheduler/DSschedulerspecs.h \
-	client/Clientspecs.h \
-	scheduler/FIFO.h \
-	General.h
-$O/server/DSdaemon.o: server/DSdaemon.cc \
-	utility/Cache.h \
-	packet/GPacket_m.h \
-	server/DSdaemon.h \
-	packet/QPacket_m.h \
-	server/DServerspecs.h \
-	scheduler/IQueue.h \
-	packet/SPacket_m.h \
-	scheduler/DSschedulerspecs.h \
-	client/Clientspecs.h \
-	scheduler/FIFO.h \
-	General.h
-$O/server/LocalFS.o: server/LocalFS.cc \
-	utility/Cache.h \
-	packet/GPacket_m.h \
-	packet/QPacket_m.h \
-	server/DServerspecs.h \
-	server/LocalFS.h \
-	packet/SPacket_m.h \
-	scheduler/DSschedulerspecs.h \
-	client/Clientspecs.h \
-	General.h
-$O/utility/Cache.o: utility/Cache.cc \
-	utility/Cache.h
+	scheduler/IQueue.h
 

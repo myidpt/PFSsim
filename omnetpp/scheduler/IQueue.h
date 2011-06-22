@@ -25,7 +25,7 @@
 #include <list>
 
 #include <omnetpp.h>
-#include "General.h"
+#include "../General.h"
 
 #define NOW SIMTIME_DBL(simTime())
 using namespace std;

@@ -13,25 +13,41 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 //
 
-#ifndef DSSCHEDULER_H_
-#define DSSCHEDULER_H_
+#ifndef DISK_H_
+#define DISK_H_
 #include "../General.h"
+#include "../scheduler/FIFO.h"
 
-#include "FIFO.h"
-#include "SFQ.h"
-
-class DSscheduler : public cSimpleModule{
+class Disk : public cSimpleModule{
 protected:
-	IQueue * queue;
+	int sockfd;
+	int myId;
+	int outstanding;
+	FIFO * queue;
+	struct syncjob_type{
+		long id;
+		double time;
+		long off;
+		int len;
+		int read; // Read 1 / write 0
+	} * syncNojob, *syncEnd, *syncJob;
+
+	struct syncjobreply_type{
+		double time; // the time of next event / the finish time for job with fid in disksim.
+		long fid; // If one job is finished, the ID of the finished job. Otherwise, -1;
+	} * syncReply;
+
 public:
-	DSscheduler();
+	Disk();
 	void initialize();
-	void handleNewJob(gPacket *);
-	void handleFinishedJob(gPacket *);
+	int sock_init(int portno);
+	void handleMessage(cMessage *);
+	void handleDataReq(gPacket *);
+	void handleDisksimSync();
 	void dispatchJobs();
 	void sendSafe(gPacket *);
-	void handleMessage(cMessage *);
-	virtual ~DSscheduler();
+	void finish();
+	virtual ~Disk();
 };
 
-#endif /* DSSCHEDULER_H_ */
+#endif /* DISK_H_ */
