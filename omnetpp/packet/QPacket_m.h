@@ -24,6 +24,7 @@
  *     int app = -1;
  *     int dsNum = 0;
  *     int dsList[1024];
+ *     long dsShares[1024];
  * }
  * </pre>
  */
@@ -58,6 +59,7 @@ class qPacket : public cPacket
     virtual unsigned int getDsListArraySize() const;
     virtual int getDsList(unsigned int k) const;
     virtual void setDsList(unsigned int k, int dsList_var);
+    virtual unsigned int getDsSharesArraySize() const;
     virtual long getDsShares(unsigned int k) const;
     virtual void setDsShares(unsigned int k, long dsShares_var);
 };

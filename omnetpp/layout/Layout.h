@@ -16,6 +16,8 @@
 #ifndef LAYOUT_H_
 #define LAYOUT_H_
 
+#include "packet/QPacket_m.h"
+
 #include "../General.h"
 /*  An example data layout in a window:
  *

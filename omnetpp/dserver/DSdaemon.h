@@ -15,6 +15,7 @@
 
 #ifndef DSDAEMON_H_
 #define DSDAEMON_H_
+#include "packet/GPacket_m.h"
 #include "../General.h"
 #include "../scheduler/FIFO.h"
 

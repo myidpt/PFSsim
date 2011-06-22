@@ -20,6 +20,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <omnetpp.h>
+
+#include "packet/GPacket_m.h"
+#include "packet/QPacket_m.h"
+
 #include "../General.h"
 #include "../request/Request.h"
 

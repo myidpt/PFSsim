@@ -39,6 +39,8 @@ qPacket::qPacket(const char *name, int kind) : cPacket(name,kind)
     this->dsNum_var = 0;
     for (unsigned int i=0; i<1024; i++)
         this->dsList_var[i] = 0;
+    for (unsigned int i=0; i<1024; i++)
+        this->dsShares_var[i] = 0;
 }
 
 qPacket::qPacket(const qPacket& other) : cPacket()
@@ -60,6 +62,8 @@ qPacket& qPacket::operator=(const qPacket& other)
     this->dsNum_var = other.dsNum_var;
     for (unsigned int i=0; i<1024; i++)
         this->dsList_var[i] = other.dsList_var[i];
+    for (unsigned int i=0; i<1024; i++)
+        this->dsShares_var[i] = other.dsShares_var[i];
     return *this;
 }
 
@@ -70,6 +74,7 @@ void qPacket::parsimPack(cCommBuffer *b)
     doPacking(b,this->app_var);
     doPacking(b,this->dsNum_var);
     doPacking(b,this->dsList_var,1024);
+    doPacking(b,this->dsShares_var,1024);
 }
 
 void qPacket::parsimUnpack(cCommBuffer *b)
@@ -79,6 +84,7 @@ void qPacket::parsimUnpack(cCommBuffer *b)
     doUnpacking(b,this->app_var);
     doUnpacking(b,this->dsNum_var);
     doUnpacking(b,this->dsList_var,1024);
+    doUnpacking(b,this->dsShares_var,1024);
 }
 
 int qPacket::getId() const
@@ -128,19 +134,22 @@ void qPacket::setDsList(unsigned int k, int dsList_var)
     this->dsList_var[k] = dsList_var;
 }
 
+unsigned int qPacket::getDsSharesArraySize() const
+{
+    return 1024;
+}
 
 long qPacket::getDsShares(unsigned int k) const
 {
-	if (k>=1024) throw cRuntimeError("Array of size 1024 indexed by %d", k);
-	return dsShares_var[k];
+    if (k>=1024) throw cRuntimeError("Array of size 1024 indexed by %d", k);
+    return dsShares_var[k];
 }
+
 void qPacket::setDsShares(unsigned int k, long dsShares_var)
 {
     if (k>=1024) throw cRuntimeError("Array of size 1024 indexed by %d", k);
     this->dsShares_var[k] = dsShares_var;
 }
-
-
 
 class qPacketDescriptor : public cClassDescriptor
 {
@@ -188,7 +197,7 @@ const char *qPacketDescriptor::getProperty(const char *propertyname) const
 int qPacketDescriptor::getFieldCount(void *object) const
 {
     cClassDescriptor *basedesc = getBaseClassDescriptor();
-    return basedesc ? 4+basedesc->getFieldCount(object) : 4;
+    return basedesc ? 5+basedesc->getFieldCount(object) : 5;
 }
 
 unsigned int qPacketDescriptor::getFieldTypeFlags(void *object, int field) const
@@ -204,6 +213,7 @@ unsigned int qPacketDescriptor::getFieldTypeFlags(void *object, int field) const
         case 1: return FD_ISEDITABLE;
         case 2: return FD_ISEDITABLE;
         case 3: return FD_ISARRAY | FD_ISEDITABLE;
+        case 4: return FD_ISARRAY | FD_ISEDITABLE;
         default: return 0;
     }
 }
@@ -221,6 +231,7 @@ const char *qPacketDescriptor::getFieldName(void *object, int field) const
         case 1: return "app";
         case 2: return "dsNum";
         case 3: return "dsList";
+        case 4: return "dsShares";
         default: return NULL;
     }
 }
@@ -238,6 +249,7 @@ const char *qPacketDescriptor::getFieldTypeString(void *object, int field) const
         case 1: return "int";
         case 2: return "int";
         case 3: return "int";
+        case 4: return "long";
         default: return NULL;
     }
 }
@@ -266,6 +278,7 @@ int qPacketDescriptor::getArraySize(void *object, int field) const
     qPacket *pp = (qPacket *)object; (void)pp;
     switch (field) {
         case 3: return 1024;
+        case 4: return 1024;
         default: return 0;
     }
 }
@@ -284,6 +297,7 @@ bool qPacketDescriptor::getFieldAsString(void *object, int field, int i, char *r
         case 1: long2string(pp->getApp(),resultbuf,bufsize); return true;
         case 2: long2string(pp->getDsNum(),resultbuf,bufsize); return true;
         case 3: long2string(pp->getDsList(i),resultbuf,bufsize); return true;
+        case 4: long2string(pp->getDsShares(i),resultbuf,bufsize); return true;
         default: return false;
     }
 }
@@ -302,6 +316,7 @@ bool qPacketDescriptor::setFieldAsString(void *object, int field, int i, const c
         case 1: pp->setApp(string2long(value)); return true;
         case 2: pp->setDsNum(string2long(value)); return true;
         case 3: pp->setDsList(i,string2long(value)); return true;
+        case 4: pp->setDsShares(i,string2long(value)); return true;
         default: return false;
     }
 }

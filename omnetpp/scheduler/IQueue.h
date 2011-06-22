@@ -25,6 +25,7 @@
 #include <list>
 
 #include <omnetpp.h>
+#include "packet/GPacket_m.h"
 #include "../General.h"
 
 #define NOW SIMTIME_DBL(simTime())

@@ -17,6 +17,9 @@
 #define FIFO_H_
 
 #include "IQueue.h"
+#include "packet/GPacket_m.h"
+//#include "packet/SPacket_m.h"
+
 #include "../General.h"
 using namespace std;
 
@@ -30,7 +33,7 @@ public:
 	gPacket * dispatchNext();
 	gPacket * popOsQ(long id);
 	gPacket * popOsQ();
-	sPacket * overhear(sPacket *, int); // No meaning
+//	sPacket * overhear(sPacket *, int); // No meaning
 	gPacket * queryJob(long id);
 };
 

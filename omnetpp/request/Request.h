@@ -16,6 +16,10 @@
 #ifndef REQUEST_H_
 #define REQUEST_H_
 
+#include "packet/GPacket_m.h"
+
+#include "packet/QPacket_m.h"
+
 #include "../General.h"
 #include "../layout/Layout.h"
 #define MAX_WINDOW_SIZE JOB_MAXSIZE

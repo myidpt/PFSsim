@@ -17,6 +17,7 @@
 #define __ROUTING_H__
 
 #include <omnetpp.h>
+#include "packet/GPacket_m.h"
 #include "../General.h"
 
 class Routing : public cSimpleModule

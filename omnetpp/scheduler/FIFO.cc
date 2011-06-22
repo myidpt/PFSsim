@@ -60,9 +60,9 @@ gPacket * FIFO::popOsQ(){
 	return ret;
 }
 
-sPacket * FIFO::overhear(sPacket * spkt, int i){
-	return NULL;
-}
+//sPacket * FIFO::overhear(sPacket * spkt, int i){
+//	return NULL;
+//}
 
 gPacket * FIFO::queryJob(long id){
 	gPacket * ret = NULL;
