@@ -26,10 +26,10 @@ simple Routing
         input cin[];
         input dsin[];
         input msin;
-        input dsschin[];
+        input schin[];
         
         output cout[];
         output dsout[];
         output msout;
-        output dsschout[];
+        output schout[];
 }

@@ -41,15 +41,15 @@ protected:
 	filereq_type * findFileReq(long id);
 public:
 	LocalFS();
-	virtual void initialize();
+	void initialize();
 	virtual void handleMessage(cMessage *);
 	virtual void handleNewFileReq(gPacket *);
 	virtual void handleBlkResp(gPacket *);
 	virtual void handleCacheAccessFinish(gPacket *);
 	virtual void dispatchNextFileReq();
 	virtual void dispatchNextDiskReq(filereq_type *);
-	virtual void sendToDSD(gPacket *);
-	virtual void sendToDisk(gPacket *);
+	void sendToDSD(gPacket *);
+	void sendToDisk(gPacket *);
 //	int getCachedSize(gPacket *, ICache::pr_type *);
 	virtual ~LocalFS();
 };

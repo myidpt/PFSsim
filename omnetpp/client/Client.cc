@@ -18,42 +18,55 @@ Define_Module(Client);
 
 void Client::initialize()
 {
-	myId = getId() - C_ID_BASE;
-	pktId = CLIENT_INDEX * (getId() - C_ID_BASE) + 1; // ID is valid from 1.
+	myId = getId() - OMNET_CID_BASE;
+	pktId = CID_OFFSET * myId + 1; // ID is valid from 1.
 	traceEnd = false;
 
-	char tfname[16] = {'t','r','a','c','e','s','/',
-			't','r','a','c','e','0','0','0','\0'};
-	tfname[12] = myId/100 + '0';
-	tfname[13] = myId%100/10 + '0';
-	tfname[14] = myId%10 + '0';
-	if( (tfp = fopen(tfname, "r")) == NULL){
-		fprintf(stderr, "Trace file open failure: %s\n", tfname);
+	if(strlen(TRACE_PATH_PREFIX) > 196){
+		fprintf(stderr, "ERROR Client: Trace file path is too long; it should be less than 196.\n");
+		deleteModule();
+	}
+	if(strlen(RESULT_PATH_PREFIX) > 196){
+		fprintf(stderr, "ERROR Client: Result file path is too long; it should be less than 196.\n");
+		deleteModule();
+	}
+	char trcfname[200] = TRACE_PATH_PREFIX;
+	int len = strlen(trcfname);
+	// Note: currently we only support less than 10000 client.
+	trcfname[len] = myId/1000 + '0';
+	trcfname[len+1] = myId%1000/100 + '0';
+	trcfname[len+2] = myId%100/10 + '0';
+	trcfname[len+3] = myId%10 + '0';
+	trcfname[len+4] = '\0';
+	if( (tfp = fopen(trcfname, "r")) == NULL){
+		fprintf(stderr, "ERROR Client: Trace file open failure: %s\n", trcfname);
+		deleteModule();
+	}
+	char rsltfname[200] = RESULT_PATH_PREFIX;
+	len = strlen(rsltfname);
+	rsltfname[len] = myId/1000 + '0';
+	rsltfname[len+1] = myId%1000/100 + '0';
+	rsltfname[len+2] = myId%100/10 + '0';
+	rsltfname[len+3] = myId%10 + '0';
+	rsltfname[len+4] = '\0';
+	if( (rfp = fopen(rsltfname, "w+")) == NULL){
+		fprintf(stderr, "Result file open failure: %s\n", rsltfname);
 		deleteModule();
 	}
 
-	char rfname[18] = {'r','e','s','u','l','t','s','/',
-			'r','e','s','u','l','t','0','0','0','\0'};
-	rfname[14] = myId/100 + '0';
-	rfname[15] = myId%100/10 + '0';
-	rfname[16] = myId%10 + '0';
-	if( (rfp = fopen(rfname, "w+")) == NULL){
-		fprintf(stderr, "Result file open failure: %s\n", rfname);
-		deleteModule();
-	}
-	requestSync = new gPacket();
-	requestSync->setKind(REQ_SYN);
+	traceSync = new gPacket();
+	traceSync->setKind(TRC_SYN);
 
-	request = NULL;
-	reqId = 0;
+	trace = NULL;
+	trcId = 0;
 
-	readNextReq(); // Start Simulation.
+	readNextTrace(); // Start Simulation.
 }
 
 void Client::handleMessage(cMessage *cmsg)
 {
 	switch(cmsg->getKind()){
-	case REQ_SYN: // Time for creating a new request.
+	case TRC_SYN: // Time for creating a new trace.
 		sendLayoutQuery();
 		break;
 	case SELF_EVENT: // If not driven by the completion of previous job, self-driven.
@@ -70,13 +83,11 @@ void Client::handleMessage(cMessage *cmsg)
 	}
 }
 
-// Read next request from the file.
-int Client::readNextReq(){
+// Read next trace from the file.
+int Client::readNextTrace(){
 	if(traceEnd)
 		return -1;
-	if(requestSync->isScheduled()){
-//		printf("Scheduled - at %lf\n",requestSync->getSendingTime());
-//		fflush(stdout);
+	if(traceSync->isScheduled()){
 		return 0; // Already done this.
 	}
 
@@ -95,12 +106,12 @@ int Client::readNextReq(){
 	int sync;
 	char line[201];
 
-	// A request may be driven by the finish of the previous request (when the sync mark is set), or be driven by a time stamp.
-	// If the sync mark is set, it will immediately process the current request when the previous one is finished.
-	// Otherwise, the current request will be processed according to the "time" argument.
-	// Note that currently we do not support processing multiple requests concurrently on a single client,
-	// so if the request is driven by a time stamp, the request will be processed at the latter one of the finish time
-	// of the previous request and the time stamp of this request in the trace file.
+	// A trace may be driven by the finish of the previous trace (when the sync mark is set), or be driven by a time stamp.
+	// If the sync mark is set, it will process the next trace when the previous one is finished.
+	// Otherwise, the current trace will be processed according to the "time stamp" on the trace when it is read from the trace file.
+	// Note that currently we do not support processing multiple traces in parallel on a single client,
+	// so if the trace is driven by a time stamp, the trace will be processed at the latter one of the finish time
+	// of the previous trace and the time stamp on this trace.
 
 	while(1){
 		if(fgets(line, 200, tfp) == NULL){
@@ -116,32 +127,32 @@ int Client::readNextReq(){
 	sscanf(line, "%lf %lld %d %d %d %d",
 			&time, &offset, &size, &read, &appid, &sync);
 
-	if(size > REQ_MAXSIZE){
-		fprintf(stderr, "ERROR Client #%d: Size %d is bigger than REQ_MAXSIZE %d, set it to be REQ_MAXSIZE.\n",
-				myId, size, REQ_MAXSIZE);
-		size = REQ_MAXSIZE;
+	if(size > TRC_MAXSIZE){
+		fprintf(stderr, "ERROR Client #%d: Size %d is bigger than TRC_MAXSIZE %d, set it to be TRC_MAXSIZE.\n",
+				myId, size, TRC_MAXSIZE);
+		size = TRC_MAXSIZE;
 	}
 
-	if(sync == 1 || (time < SIMTIME_DBL(simTime()) + C_REQ_PROC_TIME))
-		time = SIMTIME_DBL(simTime()) + C_REQ_PROC_TIME;
+	if(sync == 1 || (time < SIMTIME_DBL(simTime()) + C_TRC_PROC_TIME))
+		time = SIMTIME_DBL(simTime()) + C_TRC_PROC_TIME;
 
-	request = new Request(reqId++, time, offset, size, read, appid, sync);
-	scheduleAt(time, requestSync);
+	trace = new Trace(trcId++, time, offset, size, read, appid, sync);
+	scheduleAt(time, traceSync);
 
 	return 1;
 }
 
-// Return -1 if all the requests are done.
+// Return -1 if all the traces are done.
 // Return 0 if can't schedule more packets at this moment.
 // Return 1 if a new packet is scheduled.
-// Return 2 if the request needs to query the layout.
+// Return 2 if the trace needs to query the layout.
 int Client::scheduleNextPackets(){
-	if(request == NULL) { // At the start, or just finished a request.
-		if(readNextReq() == -1)
-			return -1; // All requests are done.
-		return 2; // Wait for requestSync to query the layout.
+	if(trace == NULL) { // At the start, or just finished a trace.
+		if(readNextTrace() == -1)
+			return -1; // All traces are done.
+		return 2; // Wait for traceSync to query the layout.
 	}
-	gPacket * gpkt = request->nextgPacket();
+	gPacket * gpkt = trace->nextgPacket();
 	if(gpkt == NULL)
 		return 0; // Can't schedule more at this moment.
 
@@ -157,7 +168,7 @@ int Client::scheduleNextPackets(){
 int Client::sendLayoutQuery(){
 	qPacket * qpkt = new qPacket("qpacket");
 	qpkt->setId(pktId);// Important, other wise the response packet won't know where to be sent.
-	qpkt->setApp(request->getApp());
+	qpkt->setApp(trace->getApp());
 	qpkt->setKind(LAYOUT_REQ);
 	qpkt->setByteLength(100); // schedule query: assume Length 100.
 	sendSafe(qpkt);
@@ -165,7 +176,7 @@ int Client::sendLayoutQuery(){
 }
 
 void Client::handleLayoutResponse(qPacket * qpkt){
-	request->setLayout(qpkt);
+	trace->setLayout(qpkt);
 	delete qpkt;
 	scheduleNextPackets();
 }
@@ -187,13 +198,13 @@ void Client::sendJobPacket(gPacket * gpkt){
 void Client::handleFinishedPacket(gPacket * gpkt){
 	gpkt->setReturntime(SIMTIME_DBL(simTime()));
 	pktStatistic(gpkt);
-	int ret = request->finishedgPacket(gpkt);
+	int ret = trace->finishedgPacket(gpkt);
 	delete gpkt;
-	if(ret == 2){ // All done for this request.
-		reqStatistic(request);
-		delete request;
-		request = NULL; // Mark that the current request is done.
-		readNextReq(); // set up future event: read next request.
+	if(ret == 2){ // All done for this trace.
+		trcStatistic(trace);
+		delete trace;
+		trace = NULL; // Mark that the current trace is done.
+		readNextTrace(); // set up future event: read next trace.
 	}else if(ret == 1){ // You have done the current window, schedule next packets.
 		scheduleNextPackets(); // set up future event
 	}
@@ -210,14 +221,14 @@ void Client::sendSafe(cMessage * cmsg){
 }
 
 // General information
-void Client::reqStatistic(Request * request){
-	fprintf(rfp, "Request #%d: %d %lld %ld {%lf %lf}\n",
-			request->getId(),
-			request->getApp(),
-			request->getOffset(),
-			request->getSize(),
-			request->getStarttime(),
-			request->getFinishtime());
+void Client::trcStatistic(Trace * trc){
+	fprintf(rfp, "Trace #%d: %d %lld %ld {%lf %lf}\n",
+			trc->getId(),
+			trc->getApp(),
+			trc->getOffset(),
+			trc->getSize(),
+			trc->getStarttime(),
+			trc->getFinishtime());
 }
 
 // General information
@@ -259,5 +270,5 @@ void Client::statistic(gPacket * gpkt){
 
 void Client::finish(){ // close result files
 	fclose(rfp); // close files
-	cancelAndDelete(requestSync);
+	cancelAndDelete(traceSync);
 }

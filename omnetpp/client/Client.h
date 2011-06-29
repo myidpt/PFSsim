@@ -25,7 +25,7 @@
 #include "packet/QPacket_m.h"
 
 #include "../General.h"
-#include "../request/Request.h"
+#include "../trace/Trace.h"
 
 class Client : public cSimpleModule{
 private:
@@ -35,9 +35,9 @@ private:
 	long pktId; // This ID increments, it is the ID of the sent packet.
 	int myId; // The ID of this client
 	bool traceEnd;
-	Request * request; // Request is one entry in the trace file; it may be divided into smaller jobs.
-	gPacket * requestSync;
-	int reqId;
+	Trace * trace; // Trace is one entry in the trace file; it may be divided into smaller jobs.
+	gPacket * traceSync;
+	int trcId;
 
 protected:
 	virtual void initialize();
@@ -46,10 +46,10 @@ protected:
 	virtual int sendLayoutQuery();
 	virtual void handleLayoutResponse(qPacket *);
 	virtual int scheduleNextPackets();
-	virtual int readNextReq();
+	virtual int readNextTrace();
 	virtual void handleFinishedPacket(gPacket *);
 	virtual void pktStatistic(gPacket *);
-	virtual void reqStatistic(Request *);
+	virtual void trcStatistic(Trace *);
 	virtual void sendSafe(cMessage *);
 	virtual void finish();
 };

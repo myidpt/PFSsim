@@ -15,7 +15,7 @@
 
 message gPacket extends cPacket
 {
-    long id = 0; // App Number is 100000 based.
+    long id = 0; // ID of the packet.
     
     double risetime = 0; // The time the job is rised on the client.
     double submittime = 0; // The time the job is submitted from the client.

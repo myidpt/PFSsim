@@ -34,11 +34,6 @@ using namespace std;
 class IQueue {
 protected:
 	int degree;
-	struct Job{
-		gPacket * gpkt;
-		double stag; // The start tags for all applications
-		double ftag; // The finish tags for all applications
-	};
 public:
 	double weight[MAX_APP]; // Weight for every application
 

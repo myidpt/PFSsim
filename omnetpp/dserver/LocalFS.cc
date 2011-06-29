@@ -37,7 +37,7 @@ LocalFS::filereq_type::filereq_type(long id){
 
 void LocalFS::initialize(){
 
-	cache = new NRU(PAGESIZE, MAXPAGENUM);
+	cache = new NRU(MAX_PAGENUM);
 	fileReqQ = new FIFO(LOCALFS_DEGREE);
 	fileReqList = new list<filereq_type *>;
 }
@@ -111,7 +111,7 @@ void LocalFS::dispatchNextFileReq(){
 	ICache::pr_type * req_pagerange = new ICache::pr_type(req_pagestart, req_pageend,
 			true, !filereqpkt->getRead(), NULL);
 
-	int cachedsize = 0;
+	int cachedsize = 0; // Unit: page
 	if(filereqpkt->getRead()){ // If it is a read operation, you need to measure how much data are in the cache.
 		cachedsize = cache->getCachedSize(req_pagerange);
 		if(cachedsize != 0){
@@ -196,7 +196,7 @@ void LocalFS::dispatchNextDiskReq(filereq_type * fr){
 		return;
 	gPacket * diskreq = NULL;
 	diskreq = new gPacket("DiskRequest");
-	diskreq->setId(fr->fileReqId * MAXPRPERREQ + fr->blkReqId); // The disk requests must have IDs to distinguish.
+	diskreq->setId(fr->fileReqId * MAX_PR_PER_REQ + fr->blkReqId); // The disk requests must have IDs to distinguish.
 	fr->blkReqId ++;
 	diskreq->setKind(BLK_REQ);
 	// Disk access is also in the unit of KB.
@@ -211,7 +211,7 @@ void LocalFS::dispatchNextDiskReq(filereq_type * fr){
 
 void LocalFS::handleBlkResp(gPacket * resp){
 	// The response comes back.
-	filereq_type * fr = findFileReq(resp->getId()/MAXPRPERREQ);
+	filereq_type * fr = findFileReq(resp->getId()/MAX_PR_PER_REQ);
 	if(fr == NULL)
 		return;
 	delete resp;

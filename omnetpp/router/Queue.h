@@ -24,7 +24,7 @@ private:
 	cQueue queue;
 	cMessage *endTransmissionEvent;
 protected:
-    virtual void initialize();
+    void initialize();
     virtual void handleMessage(cMessage *msg);
     virtual void startTransmitting(cMessage *msg);
     virtual ~Queue();

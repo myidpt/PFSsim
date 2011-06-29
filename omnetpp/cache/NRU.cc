@@ -15,7 +15,7 @@
 
 #include "NRU.h"
 
-NRU::NRU(int ps, int pn):ICache(ps, pn){
+NRU::NRU(int pn):ICache(pn){
 	prePageTable = new struct ICache::pr_type
 		(-200, -100, false, false, pageTable);
 	// a pr that has a next pointer pointing to the page table list. Only used for simplicity of some functions.

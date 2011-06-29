@@ -24,19 +24,19 @@ void Routing::handleMessage(cMessage *msg)
 		send(msg, "msout");
 		break;
 	case LAYOUT_RESP:
-		send(msg, "cout", ((qPacket *)msg)->getId() / CLIENT_INDEX);
+		send(msg, "cout", ((qPacket *)msg)->getId() / CID_OFFSET);
 		break;
 	case JOB_REQ:
-		send(msg, "dsschout", ((gPacket *)msg)->getDecision());
+		send(msg, "schout", ((gPacket *)msg)->getDecision());
 		break;
 	case JOB_DISP:
 		send(msg, "dsout", ((gPacket *)msg)->getDecision());
 		break;
 	case JOB_FIN:
-		send(msg, "dsschout", ((gPacket *)msg)->getDecision());
+		send(msg, "schout", ((gPacket *)msg)->getDecision());
 		break;
 	case JOB_RESP:
-		send(msg, "cout", ((gPacket *)msg)->getId() / CLIENT_INDEX);
+		send(msg, "cout", ((gPacket *)msg)->getId() / CID_OFFSET);
 		break;
 	}
 }

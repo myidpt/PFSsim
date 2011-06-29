@@ -31,13 +31,12 @@ public:
 		pr_type(long long st, long long e, bool ref, bool mod, struct pr_type * n);
 	};
 protected:
-	int pageSize;
 	int maxPageNum;
 	int curPageNum;
 	struct pr_type * pageTable; // This data structure has the same effect of pagetable.
 public:
-	ICache(int pagesize, int maxpagenum);
-	~ICache();
+	ICache(int maxpagenum);
+	virtual ~ICache();
 	// Conducts the cache reading, and return the pages that do not previously exist in the
 	// cache (page fault). Always apply the entire page range to the cache, this may lead to
 	// a situation that the data held in cache is temporarily bigger than the page size limit
@@ -63,8 +62,8 @@ public:
 	// <Return value> A list of dirty page ranges which need to be written back.
 	virtual pr_type * flushCache() = 0;
 	virtual void printPageTable() = 0;
-	virtual int getSize(pr_type *);
 	virtual int getCachedSize(pr_type *);
+	static int getSize(pr_type *); // Unit: page
 	static void printPRList(pr_type *);
 };
 

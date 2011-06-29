@@ -22,7 +22,7 @@ module Router
     gates:
         inout c[]; // The size is defined in pfs.ned.
         inout ds[];
-        inout dssch[];
+        inout sch[];
         inout ms;
     submodules:
         routing: Routing {
@@ -31,10 +31,10 @@ module Router
             gates:
                 cin[sizeof(c)];
                 dsin[sizeof(ds)];
-                dsschin[sizeof(dssch)];
+                schin[sizeof(sch)];
                 cout[sizeof(c)];
-                dsout[sizeof(dssch)];
-                dsschout[sizeof(dssch)];
+                dsout[sizeof(sch)];
+                schout[sizeof(sch)];
         }
         cq[sizeof(c)]: Queue {
             @display("p=194,59");
@@ -42,7 +42,7 @@ module Router
         dsq[sizeof(ds)]: Queue {
             @display("p=194,303");
         }
-        dsschq[sizeof(dssch)]: Queue {
+        schq[sizeof(sch)]: Queue {
             @display("p=45,180");
         }
         msq: Queue {
@@ -55,15 +55,15 @@ module Router
             routing.cin[i] <-- cq[i].out;
             c[i] <--> cq[i].line;
         }
-        // data server and dsscheduler
+        // data server and scheduler
         for i=0..sizeof(ds)-1 {
             routing.dsout[i] --> dsq[i].in;
             routing.dsin[i] <-- dsq[i].out;
             ds[i] <--> dsq[i].line;
             
-            routing.dsschout[i] --> dsschq[i].in;
-            routing.dsschin[i] <-- dsschq[i].out;
-            dssch[i] <--> dsschq[i].line;
+            routing.schout[i] --> schq[i].in;
+            routing.schin[i] <-- schq[i].out;
+            sch[i] <--> schq[i].line;
         }
         // metadata server
         routing.msout --> msq.in;

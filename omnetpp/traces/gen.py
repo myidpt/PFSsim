@@ -10,9 +10,9 @@ sync = 0
 random.seed()
 for i in range(0, 32):
 	if i < 10:
-		name = str('trace00%d' %i)
+		name = str('trace000%d' %i)
 	else:
-		name = str('trace0%d' %i)
+		name = str('trace00%d' %i)
 	f = open(name, 'w')
 	time = random.random()
 	sync = 0

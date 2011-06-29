@@ -48,21 +48,21 @@ private:
 public:
 	Layout(int id);
 	virtual ~Layout();
-	virtual void setWindowSize(long size);
-	virtual void setServerNum(int num);
-	virtual void setServerList(int servernum, int list[]);
-	virtual void setServerShares(int servernum, long size[]);
-	virtual void setLayout(qPacket *);
-	virtual void setqPacket(qPacket *);
-	virtual void setServerID(int index, int serverID);
-	virtual void setServerShare(int index, long share);
-	virtual int getAppID();
-	virtual long getWindowSize();
-	virtual int getServerNum();
-	virtual int getServerID(int index); // The input index is the index in the serverList or serverShares.
-	virtual long getServerShare(int index); // The input index is the index in the serverList or serverShares.
-	virtual int findServerIndex(int id); // Find a server's index in the list given its ID.
-	virtual void calculateWindowSize();
+	void setWindowSize(long size);
+	void setServerNum(int num);
+	void setServerList(int servernum, int list[]);
+	void setServerShares(int servernum, long size[]);
+	void setLayout(qPacket *);
+	void setqPacket(qPacket *);
+	void setServerID(int index, int serverID);
+	void setServerShare(int index, long share);
+	int getAppID();
+	long getWindowSize();
+	int getServerNum();
+	int getServerID(int index); // The input index is the index in the serverList or serverShares.
+	long getServerShare(int index); // The input index is the index in the serverList or serverShares.
+	int findServerIndex(int id); // Find a server's index in the list given its ID.
+	void calculateWindowSize();
 };
 
 #endif /* LAYOUT_H_ */

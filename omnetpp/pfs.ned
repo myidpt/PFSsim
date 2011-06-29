@@ -21,7 +21,7 @@ import client.Client;
 import dserver.Dserver;
 import mserver.Mserver;
 import router.Router;
-import scheduler.DSscheduler;
+import scheduler.Scheduler;
 
 network pfs
 {
@@ -49,7 +49,7 @@ network pfs
                 @display("p=265,258");
         }
 
-        dssch[numDServers]: DSscheduler {
+        sch[numDServers]: Scheduler {
             parameters:
                 @display("p=121,258");
         }
@@ -64,7 +64,7 @@ network pfs
             gates:
                 c[numClients];
                 ds[numDServers];
-                dssch[numDServers];
+                sch[numDServers];
         }
     connections:
         // C-Router channels
@@ -75,7 +75,7 @@ network pfs
         // Router-DS and Router-DSscheduler channels
         for i=0..numDServers-1 {
             switch.ds[i] <--> Channel <--> ds[i].g;
-            switch.dssch[i] <--> Channel <--> dssch[i].g;
+            switch.sch[i] <--> Channel <--> sch[i].g;
         }
 
         // MS-Router channels

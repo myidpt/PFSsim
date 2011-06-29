@@ -13,26 +13,25 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 //
 
-#ifndef DSDAEMON_H_
-#define DSDAEMON_H_
-#include "packet/GPacket_m.h"
+#ifndef SCHEDULER_H_
+#define SCHEDULER_H_
 #include "../General.h"
-#include "../scheduler/FIFO.h"
 
-class DSdaemon : public cSimpleModule{
+#include "FIFO.h"
+#include "SFQ.h"
+
+class Scheduler : public cSimpleModule{
 protected:
-	FIFO * queue;
+	IQueue * queue;
 public:
-	DSdaemon();
+	Scheduler();
 	void initialize();
-	virtual void handleMessage(cMessage * cmsg);
-	virtual void handleNewJob(gPacket *);
-	virtual void handleDataReq(gPacket *);
-	virtual void handleDataResp(gPacket *);
-	virtual void dispatchJobs();
-	void sendToLFS(gPacket *);
-	void sendToEth(gPacket *);
-	virtual ~DSdaemon();
+	void handleNewJob(gPacket *);
+	void handleFinishedJob(gPacket *);
+	void dispatchJobs();
+	void sendSafe(gPacket *);
+	void handleMessage(cMessage *);
+	virtual ~Scheduler();
 };
 
-#endif /* DSDAEMON_H_ */
+#endif /* SCHEDULER_H_ */

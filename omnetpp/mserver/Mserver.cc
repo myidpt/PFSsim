@@ -18,7 +18,7 @@
 Define_Module(Mserver);
 
 void Mserver::initialize(){ // Change here to change data layout.
-	parseLayoutDoc("config/layout");
+	parseLayoutDoc(LAYOUT_INPUT_PATH);
 	if(appNum == 0)
 		fprintf(stderr, "ERROR Mserver: No application data layout is given.\n");
 	printf("Mserver created.\n");
@@ -29,6 +29,9 @@ void Mserver::handleMessage(cMessage *cmsg){
 	switch(cmsg->getKind()){
 	case LAYOUT_REQ:
 		handleLayoutReq((qPacket*)cmsg);
+		break;
+	case LAYOUT_RESP:
+		sendSafe(cmsg);
 		break;
 	default:
 		fprintf(stderr, "ERROR Mserver: Unknown message type %d.\n", cmsg->getKind());
@@ -42,9 +45,12 @@ void Mserver::handleLayoutReq(qPacket *qpkt){
 			layoutlist[i]->setqPacket(qpkt);
 		}
 	}
-	qpkt->setKind(LAYOUT_RESP);
 	qpkt->setByteLength(300); // Assume schedule reply length is 300.
-	sendSafe(qpkt);
+	qpkt->setKind(LAYOUT_RESP);
+	if(MS_PROC_TIME != 0)
+		scheduleAt((simtime_t)(SIMTIME_DBL(simTime()) + MS_PROC_TIME), qpkt);
+	else
+		sendSafe(qpkt);
 }
 
 void Mserver::sendSafe(cMessage * cmsg){

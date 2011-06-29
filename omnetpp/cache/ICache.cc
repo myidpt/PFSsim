@@ -15,8 +15,7 @@
 
 #include "ICache.h"
 
-ICache::ICache(int pagesize, int maxpagenum) {
-	pageSize = pagesize;
+ICache::ICache(int maxpagenum) {
 	maxPageNum = maxpagenum;
 	curPageNum = 0;
 	pageTable = NULL;
@@ -29,7 +28,7 @@ ICache::pr_type::pr_type(long long st, long long e, bool ref, bool mod, struct p
 int ICache::getSize(pr_type * pr){
 	int size = 0;
 	while(pr != NULL){
-		size += (pr->end - pr->start) * pageSize;
+		size += (pr->end - pr->start);
 		pr = pr->next;
 	}
 	return size;

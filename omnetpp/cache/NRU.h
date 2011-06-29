@@ -23,13 +23,13 @@ private:
 	struct ICache::pr_type * rwCache(struct pr_type * pr);
 	ICache::pr_type * prePageTable; // Only useful internally. No meaning.
 public:
-	NRU(int, int);
+	NRU(int);
 	virtual struct ICache::pr_type * readCache(struct pr_type * pr);
 	virtual void writeCache(struct pr_type * pr);
 	virtual struct pr_type * flushCache();
 	virtual long mergePTandGetSize();
 	virtual void resetRefFlag();
-	virtual void printPageTable();
+	void printPageTable();
 	virtual ~NRU();
 };
 

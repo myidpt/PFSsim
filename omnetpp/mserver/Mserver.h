@@ -28,10 +28,11 @@ class Mserver : public cSimpleModule{
 	int appNum;
 	virtual void parseLayoutDoc(const char * fname);
   protected:
-	virtual void initialize();
-	virtual void handleMessage(cMessage *msg);
-	virtual void handleLayoutReq(qPacket *qpkt);
-	virtual void sendSafe(cMessage *);
+	void initialize();
+	void handleMessage(cMessage *);
+	virtual void handleLayoutReq(qPacket *);
+	void handleqPacketReply(qPacket *);
+	void sendSafe(cMessage *);
 	virtual ~Mserver();
 };
 
