@@ -22,6 +22,7 @@ class Disk : public cSimpleModule{
 protected:
 	int sockfd;
 	int myId;
+	int portno;
 	int outstanding;
 	FIFO * queue;
 	struct syncjob_type{
@@ -37,6 +38,8 @@ protected:
 		long fid; // If one job is finished, the ID of the finished job. Otherwise, -1;
 	} * syncReply;
 
+	void dispatchJobsAndSync();
+
 public:
 	Disk();
 	void initialize();
@@ -44,7 +47,7 @@ public:
 	void handleMessage(cMessage *);
 	void handleDataReq(gPacket *);
 	void handleDisksimSync();
-	void dispatchJobs();
+	int dispatchJobs();
 	void sendSafe(gPacket *);
 	void finish();
 	virtual ~Disk();

@@ -85,8 +85,9 @@ void Client::handleMessage(cMessage *cmsg)
 
 // Read next trace from the file.
 int Client::readNextTrace(){
-	if(traceEnd)
+	if(traceEnd){
 		return -1;
+	}
 	if(traceSync->isScheduled()){
 		return 0; // Already done this.
 	}
@@ -205,7 +206,7 @@ void Client::handleFinishedPacket(gPacket * gpkt){
 		delete trace;
 		trace = NULL; // Mark that the current trace is done.
 		readNextTrace(); // set up future event: read next trace.
-	}else if(ret == 1){ // You have done the current window, schedule next packets.
+	}else if(ret == 1 || ret == 0){ // You have done the current window, schedule next packets.
 		scheduleNextPackets(); // set up future event
 	}
 }
@@ -234,7 +235,7 @@ void Client::trcStatistic(Trace * trc){
 // General information
 void Client::pktStatistic(gPacket * gpkt){
 	fprintf(rfp, "   Packet #%ld: %lld %d %d %d %d\n"
-			"\t\t%lf %lf %lf %lf %lf\n",
+			"\t\t%lf %lf %lf %lf %lf %lf %lf\n",
 			gpkt->getId(),
 			(long long)(gpkt->getLowoffset() + gpkt->getHighoffset() * LOWOFFSET_RANGE),
 			gpkt->getSize(),
@@ -243,6 +244,8 @@ void Client::pktStatistic(gPacket * gpkt){
 			gpkt->getDecision(),
 
 			gpkt->getRisetime(), // Time info
+			gpkt->getInterceptiontime(),
+			gpkt->getScheduletime(),
 			gpkt->getArrivaltime(),
 			gpkt->getDispatchtime(),
 			gpkt->getFinishtime(),

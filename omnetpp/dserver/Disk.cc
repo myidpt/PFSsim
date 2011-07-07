@@ -23,7 +23,7 @@ Disk::Disk() {
 
 void Disk::initialize(){
 	myId = (getId() - DISK_ID_BASE) / 3;
-	int portno = BASE_PORT + myId; // Port number is got by this.
+	portno = BASE_PORT + myId; // Port number is got by this.
 
 	if(sock_init(portno) == -1){
 		fprintf(stderr, "Socket creation failure.\n");
@@ -90,19 +90,24 @@ void Disk::handleMessage(cMessage *cmsg){
 		break;
 	case BLK_RESP:
 		sendSafe((gPacket *)cmsg);
+		dispatchJobsAndSync();
 		break;
 	}
 }
 
 void Disk::handleDataReq(gPacket * datareq){
 	queue->pushWaitQ(datareq);
-	dispatchJobs();
+	dispatchJobsAndSync();
+}
+
+void Disk::dispatchJobsAndSync(){
+	if(dispatchJobs() > 0)
+		handleDisksimSync();
 }
 
 void Disk::handleDisksimSync(){
 	if(outstanding == 0) // Don't need to do sync.
 		return;
-
 	int n;
 	syncNojob->time = SIMTIME_DBL(simTime()); // Transmit the current time of Dserver.
 	n = write(sockfd, syncNojob, sizeof(struct syncjob_type));
@@ -112,7 +117,18 @@ void Disk::handleDisksimSync(){
 		return;
 	}
 	while(1){
-		while((n = read(sockfd, syncReply, sizeof(struct syncjobreply_type))) == 0)sleep(0.1);
+		int i;
+		for(i = 0; i < 10; i ++){
+			if((n = read(sockfd, syncReply, sizeof(struct syncjobreply_type))) == 0)
+				sleep(0.1);
+			else
+				break;
+		}
+		if(i == 10){
+			fprintf(stderr, "ERROR Disk: read from socket #%d timed out.\n", portno);
+			finish();
+			deleteModule();
+		}
 		if(n < 0){
 			fprintf(stderr, "disksim_sync: read error.\n");
 			return;
@@ -144,34 +160,28 @@ void Disk::handleDisksimSync(){
 
 }
 
-void Disk::dispatchJobs(){
+int Disk::dispatchJobs(){
 	gPacket * gpkt;
-
+	int prev = outstanding;
 	while(1){
 		if((gpkt = queue->dispatchNext()) == NULL)
 			break;
 		outstanding ++;
-		gpkt->setDispatchtime(SIMTIME_DBL(simTime()));
-
 		syncJob->id = gpkt->getId();
-		syncJob->time = gpkt->getDispatchtime();
+		syncJob->time = SIMTIME_DBL(simTime());
 		syncJob->off = gpkt->getLowoffset() % 2000000; // Disksim doesn't support very big offset.
 		syncJob->len = gpkt->getSize();
 
 		if (write(sockfd, syncJob, sizeof(struct syncjob_type)) < 0){
 			fprintf(stderr, "ERROR writing to socket\n");
-			return;
+			return -1;
 		}
 	}
-	handleDisksimSync();
+	return (outstanding - prev);
 }
 
 void Disk::sendSafe(gPacket * gpkt){
-//	cChannel * cch = gate("g$o")->getTransmissionChannel();
-//	if(cch->isBusy())
-//		sendDelayed(gpkt, cch->getTransmissionFinishTime() - simTime(), "g$o");
-//	else
-		send(gpkt, "g$o");
+	send(gpkt, "g$o");
 }
 
 void Disk::finish(){

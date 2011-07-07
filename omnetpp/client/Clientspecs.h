@@ -8,7 +8,7 @@
 
 #define OMNET_CID_BASE 2 // The client IDs are the OMNeT++ numbered IDs minus 2.
 #define C_TOTAL 32 // Client total number.
-#define MAX_APP C_TOTAL // The maximum number of applications.
+#define MAX_APP 256 // The maximum number of applications.
 
 #define CID_OFFSET 10000 // The offset of the Client ID in the packet IDs.
 

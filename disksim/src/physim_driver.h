@@ -1,12 +1,18 @@
 #include "disksim_interface.h"
+
 #define BLOCK            4096
-#define MIN_ACCESS_SIZE     512
+#define DEGREE           1
 #define SYNC_SIZE        24 // The size of the synchronization message.
 /* OMNet++ uses second as time unit, while disksim uses millisecond as time unit. */
-#define AMPLIFY (16000)
+#define AMPLIFY          15000
 #define S_TO_MS(time)    (time*AMPLIFY)
 #define MS_TO_S(time)    (time/AMPLIFY)
-#define DEGREE 2
+
+int degree;
+int outstanding;
+int sockfd;
+int newsockfd;
+int portno;
 
 typedef	double SysTime;		/* system time in seconds.usec */
 typedef	struct	{
@@ -33,6 +39,9 @@ void syssim_schedule_callback(disksim_interface_callback_t, SysTime t, void *);
 void syssim_report_completion(SysTime t, struct disksim_request *r, void *);
 void syssim_deschedule_callback(double, void *);
 
+int createConnection();
+int submitNewJob(struct disksim_interface *);
+int syncNoJob(struct disksim_interface *);
 void add_statistics(Stat *, double);
 void print_statistics(Stat *, const char *);
 

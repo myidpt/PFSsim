@@ -223,7 +223,7 @@ void LocalFS::sendToDisk(gPacket * req){
 }
 
 void LocalFS::sendToDSD(gPacket * req){
-		send(req, "dsd$o");
+	send(req, "dsd$o");
 }
 
 void LocalFS::handleCacheAccessFinish(gPacket * gpkt){

@@ -70,16 +70,19 @@ gPacket * Trace::nextgPacket() {
 
 	// If the current window has not sent all the packets.
 	gPacket * gpkt = getNextgPacketFromWindow();
-	if(gpkt != NULL)
+	if(gpkt != NULL){
 		return gpkt;
-
-	for(int i = 0; i < layout->getServerNum(); i ++){
-		if(serverWindow[i] == SW_SENT) // Un-received packets exist.
-			return NULL;
 	}
 
-	if(unProcessedSize == 0) // This is the last window, and it has sent all its packets.
+	for(int i = 0; i < layout->getServerNum(); i ++){
+		if(serverWindow[i] == SW_SENT){ // Un-received packets exist.
+			return NULL;
+		}
+	}
+
+	if(unProcessedSize == 0){ // This is the last window, and it has sent all its packets.
 		return NULL;
+	}
 
 	// Current window is all done (sending and receiving), and next window exists.
 	// Do next window.

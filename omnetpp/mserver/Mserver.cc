@@ -40,10 +40,16 @@ void Mserver::handleMessage(cMessage *cmsg){
 
 void Mserver::handleLayoutReq(qPacket *qpkt){
 	int app = qpkt->getApp();
-	for(int i = 0; i < appNum; i ++){
+	int i;
+	for(i = 0; i < appNum; i ++){
 		if(layoutlist[i]->getAppID() == app){
 			layoutlist[i]->setqPacket(qpkt);
+			break;
 		}
+	}
+	if(i == appNum){
+		fprintf(stderr,"ERROR Mserver: Layout of application ID %d is not defined in the layout file.\n", app);
+		deleteModule();
 	}
 	qpkt->setByteLength(300); // Assume schedule reply length is 300.
 	qpkt->setKind(LAYOUT_RESP);
@@ -110,10 +116,18 @@ void Mserver::parseLayoutDoc(const char * fname){
 			if(val != -1 && sep == true){
 				if(position == app_id){
 					printf("\nAPP: %ld   ",val);
+					if(val >= MAX_APP){
+						fprintf(stderr, "ERROR Mserver: Application ID %d in layout file out of range.\n", (int)val);
+						deleteModule();
+					}
 					layout = new Layout((int)val);
 					position = server_id;
 				}else if(position == server_id){
 					printf("[%ld ",val);
+					if(val >= DS_TOTAL){
+						fprintf(stderr, "ERROR Mserver: Data Server ID %d in layout file out of range.\n", (int)val);
+						deleteModule();
+					}
 					layout->setServerID(index, (int)val);
 					position = server_share;
 				}else{

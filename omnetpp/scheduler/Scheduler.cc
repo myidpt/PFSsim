@@ -49,6 +49,7 @@ void Scheduler::handleMessage(cMessage * cmsg) {
 }
 
 void Scheduler::handleNewJob(gPacket * gpkt) { // from the client
+	gpkt->setInterceptiontime(SIMTIME_DBL(simTime()));
 	gpkt->setKind(JOB_DISP); // let the router know: to the data server
 	queue->pushWaitQ(gpkt);
 	if(SCH_NEWJOB_PROC_TIME != 0){
@@ -73,8 +74,10 @@ void Scheduler::dispatchJobs(){
 	gPacket * jobtodispatch = NULL;
 	while(1){
 		jobtodispatch = queue->dispatchNext();
-		if(jobtodispatch != NULL)
+		if(jobtodispatch != NULL){
+			jobtodispatch->setScheduletime(SIMTIME_DBL(simTime()));
 			sendSafe(jobtodispatch);
+		}
 		else
 			break;
 	}

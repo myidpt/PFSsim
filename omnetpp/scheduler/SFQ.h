@@ -22,9 +22,6 @@
 	for(int wi = 0; wi < 1; wi ++){\
 		weight[wi] = 1000;\
 	}\
-	for(int wi = 1; wi < 2; wi ++){\
-		weight[wi] = 2000;\
-	}\
 } while(0);
 
 #include "IQueue.h"
