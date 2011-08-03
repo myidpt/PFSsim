@@ -21,14 +21,17 @@
 #include <string.h>
 #include <omnetpp.h>
 
+#include "../General.h"
+#include "../trace/Trace.h"
 #include "packet/GPacket_m.h"
 #include "packet/QPacket_m.h"
 
-#include "../General.h"
-#include "../trace/Trace.h"
 
 class Client : public cSimpleModule{
 private:
+    double trc_proc_time;
+    double pkt_proc_time;
+
 	int ms;
 	FILE * tfp; // trace file pointer
 	FILE * rfp; // result file pointer
@@ -38,6 +41,8 @@ private:
 	Trace * trace; // Trace is one entry in the trace file; it may be divided into smaller jobs.
 	gPacket * traceSync;
 	int trcId;
+
+	static int idInit;
 
 protected:
 	virtual void initialize();

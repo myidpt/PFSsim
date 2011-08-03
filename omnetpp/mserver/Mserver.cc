@@ -18,11 +18,12 @@
 Define_Module(Mserver);
 
 void Mserver::initialize(){ // Change here to change data layout.
-	parseLayoutDoc(LAYOUT_INPUT_PATH);
-	if(appNum == 0)
+	numDservers = (int)par("numDservers").longValue();
+	ms_proc_time = par("ms_proc_time").doubleValue();
+
+	parseLayoutDoc(par("layout_input_path").stringValue());
+	if(numApps == 0)
 		fprintf(stderr, "ERROR Mserver: No application data layout is given.\n");
-	printf("Mserver created.\n");
-	fflush(stdout);
 }
 
 void Mserver::handleMessage(cMessage *cmsg){
@@ -41,20 +42,20 @@ void Mserver::handleMessage(cMessage *cmsg){
 void Mserver::handleLayoutReq(qPacket *qpkt){
 	int app = qpkt->getApp();
 	int i;
-	for(i = 0; i < appNum; i ++){
+	for(i = 0; i < numApps; i ++){
 		if(layoutlist[i]->getAppID() == app){
 			layoutlist[i]->setqPacket(qpkt);
 			break;
 		}
 	}
-	if(i == appNum){
+	if(i == numApps){
 		fprintf(stderr,"ERROR Mserver: Layout of application ID %d is not defined in the layout file.\n", app);
 		deleteModule();
 	}
 	qpkt->setByteLength(300); // Assume schedule reply length is 300.
 	qpkt->setKind(LAYOUT_RESP);
-	if(MS_PROC_TIME != 0)
-		scheduleAt((simtime_t)(SIMTIME_DBL(simTime()) + MS_PROC_TIME), qpkt);
+	if(ms_proc_time != 0)
+		scheduleAt((simtime_t)(SIMTIME_DBL(simTime()) + ms_proc_time), qpkt);
 	else
 		sendSafe(qpkt);
 }
@@ -124,7 +125,7 @@ void Mserver::parseLayoutDoc(const char * fname){
 					position = server_id;
 				}else if(position == server_id){
 					printf("[%ld ",val);
-					if(val >= DS_TOTAL){
+					if(val >= numDservers){
 						fprintf(stderr, "ERROR Mserver: Data Server ID %d in layout file out of range.\n", (int)val);
 						deleteModule();
 					}
@@ -149,11 +150,11 @@ void Mserver::parseLayoutDoc(const char * fname){
 	}
 	printf("\n");
 	fflush(stdout);
-	appNum = app_index;
+	numApps = app_index;
 	fclose(fp);
 }
 Mserver::~Mserver(){
-	for(int i = 0; i < appNum; i ++){
+	for(int i = 0; i < numApps; i ++){
 		delete layoutlist[i];
 	}
 }

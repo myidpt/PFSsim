@@ -27,6 +27,7 @@ protected:
     void initialize();
     virtual void handleMessage(cMessage *msg);
     virtual void startTransmitting(cMessage *msg);
+    void finish();
     virtual ~Queue();
 };
 

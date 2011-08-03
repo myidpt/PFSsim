@@ -20,6 +20,9 @@
 
 class Disk : public cSimpleModule{
 protected:
+    int degree;
+    int base_port;
+
 	int sockfd;
 	int myId;
 	int portno;
@@ -37,6 +40,8 @@ protected:
 		double time; // the time of next event / the finish time for job with fid in disksim.
 		long fid; // If one job is finished, the ID of the finished job. Otherwise, -1;
 	} * syncReply;
+
+	static int idInit;
 
 	void dispatchJobsAndSync();
 

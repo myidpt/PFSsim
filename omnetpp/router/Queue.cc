@@ -53,6 +53,9 @@ void Queue::handleMessage(cMessage *msg){
 	}
 }
 
+void Queue::finish(){
+	cancelAndDelete(endTransmissionEvent);
+}
+
 Queue::~Queue(){
-	delete endTransmissionEvent;
 }

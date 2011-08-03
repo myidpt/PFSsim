@@ -21,12 +21,18 @@ Scheduler::Scheduler() {
 }
 
 void Scheduler::initialize(){
-	switch(SCH_ALG){
+	algorithm = par("algorithm").longValue();
+	degree = par("degree").longValue();
+	newjob_proc_time = par("newjob_proc_time").doubleValue();
+	finjob_proc_time = par("finjob_proc_time").doubleValue();
+	numClients = par("numClients").longValue();
+
+	switch(algorithm){
 	case FIFO_ALG:
-		queue = new FIFO(SCH_DEGREE);
+		queue = new FIFO(degree);
 		break;
 	case SFQ_ALG:
-		queue = new SFQ(SCH_DEGREE);
+		queue = new SFQ(degree, numClients);
 		break;
 	default:
 		fprintf(stderr, "ERROR DSscheduler: Undefined algorithm.\n");
@@ -52,8 +58,8 @@ void Scheduler::handleNewJob(gPacket * gpkt) { // from the client
 	gpkt->setInterceptiontime(SIMTIME_DBL(simTime()));
 	gpkt->setKind(JOB_DISP); // let the router know: to the data server
 	queue->pushWaitQ(gpkt);
-	if(SCH_NEWJOB_PROC_TIME != 0){
-		scheduleAt((simtime_t)(SIMTIME_DBL(simTime()) + SCH_NEWJOB_PROC_TIME), gpkt);
+	if(newjob_proc_time != 0){
+		scheduleAt((simtime_t)(SIMTIME_DBL(simTime()) + newjob_proc_time), gpkt);
 	} else {
 		dispatchJobs();
 	}
@@ -63,8 +69,8 @@ void Scheduler::handleFinishedJob(gPacket * gpkt){ // from the data server
 	gpkt->setKind(JOB_RESP); // let the router know: to the client
 	queue->popOsQ(gpkt->getId());
 	sendSafe(gpkt); // to the client
-	if(SCH_FINJOB_PROC_TIME != 0){
-		scheduleAt((simtime_t)(SIMTIME_DBL(simTime()) + SCH_FINJOB_PROC_TIME), gpkt);
+	if(finjob_proc_time != 0){
+		scheduleAt((simtime_t)(SIMTIME_DBL(simTime()) + finjob_proc_time), gpkt);
 	} else {
 		dispatchJobs();
 	}

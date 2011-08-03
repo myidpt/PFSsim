@@ -23,11 +23,13 @@
 #include "../layout/Layout.h"
 
 class Mserver : public cSimpleModule{
-  private:
+private:
+	double ms_proc_time;
 	Layout * layoutlist[MAX_APP];
-	int appNum;
+	int numApps;
+	int numDservers;
 	virtual void parseLayoutDoc(const char * fname);
-  protected:
+protected:
 	void initialize();
 	void handleMessage(cMessage *);
 	virtual void handleLayoutReq(qPacket *);

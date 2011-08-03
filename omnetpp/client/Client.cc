@@ -16,21 +16,29 @@
 
 Define_Module(Client);
 
-void Client::initialize()
-{
-	myId = getId() - OMNET_CID_BASE;
-	pktId = CID_OFFSET * myId + 1; // ID is valid from 1.
+int Client::idInit = 0;
+
+void Client::initialize(){
+
+    trc_proc_time = par("trc_proc_time").doubleValue();
+    pkt_proc_time = par("pkt_proc_time").doubleValue();
+    const char * trc_path_prefix = par("trc_path_prefix").stringValue();
+    const char * rslt_path_prefix = par("rslt_path_prefix").stringValue();
+
+	myId = idInit ++;
+	pktId = CID_OFFSET_IN_PID * myId + 1; // ID is valid from 1.
 	traceEnd = false;
 
-	if(strlen(TRACE_PATH_PREFIX) > 196){
+	if(strlen(trc_path_prefix) > 196){
 		fprintf(stderr, "ERROR Client: Trace file path is too long; it should be less than 196.\n");
 		deleteModule();
 	}
-	if(strlen(RESULT_PATH_PREFIX) > 196){
+	if(strlen(rslt_path_prefix) > 196){
 		fprintf(stderr, "ERROR Client: Result file path is too long; it should be less than 196.\n");
 		deleteModule();
 	}
-	char trcfname[200] = TRACE_PATH_PREFIX;
+	char trcfname[200];
+	strcpy(trcfname, trc_path_prefix);
 	int len = strlen(trcfname);
 	// Note: currently we only support less than 10000 client.
 	trcfname[len] = myId/1000 + '0';
@@ -42,7 +50,8 @@ void Client::initialize()
 		fprintf(stderr, "ERROR Client: Trace file open failure: %s\n", trcfname);
 		deleteModule();
 	}
-	char rsltfname[200] = RESULT_PATH_PREFIX;
+	char rsltfname[200];
+	strcpy(rsltfname, rslt_path_prefix);
 	len = strlen(rsltfname);
 	rsltfname[len] = myId/1000 + '0';
 	rsltfname[len+1] = myId%1000/100 + '0';
@@ -63,8 +72,7 @@ void Client::initialize()
 	readNextTrace(); // Start Simulation.
 }
 
-void Client::handleMessage(cMessage *cmsg)
-{
+void Client::handleMessage(cMessage *cmsg){
 	switch(cmsg->getKind()){
 	case TRC_SYN: // Time for creating a new trace.
 		sendLayoutQuery();
@@ -134,8 +142,8 @@ int Client::readNextTrace(){
 		size = TRC_MAXSIZE;
 	}
 
-	if(sync == 1 || (time < SIMTIME_DBL(simTime()) + C_TRC_PROC_TIME))
-		time = SIMTIME_DBL(simTime()) + C_TRC_PROC_TIME;
+	if(sync == 1 || (time < SIMTIME_DBL(simTime()) + trc_proc_time))
+		time = SIMTIME_DBL(simTime()) + trc_proc_time;
 
 	trace = new Trace(trcId++, time, offset, size, read, appid, sync);
 	scheduleAt(time, traceSync);
@@ -158,7 +166,7 @@ int Client::scheduleNextPackets(){
 		return 0; // Can't schedule more at this moment.
 
 	gpkt->setId(pktId);
-	gpkt->setRisetime(SIMTIME_DBL(simTime()) + C_PKT_PROC_TIME);
+	gpkt->setRisetime(SIMTIME_DBL(simTime()) + pkt_proc_time);
 	gpkt->setKind(SELF_EVENT);
 
 	pktId ++;

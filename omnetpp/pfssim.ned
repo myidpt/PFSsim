@@ -1,3 +1,4 @@
+
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -23,11 +24,11 @@ import mserver.Mserver;
 import router.Router;
 import scheduler.Scheduler;
 
-network pfs
+network pfssim
 {
     parameters:
-        int numClients = 32;
-        int numDServers = 4;
+        int numClients;
+        int numDservers;
     types:
         channel Channel extends ned.DatarateChannel
         {
@@ -44,18 +45,19 @@ network pfs
                 @display("p=121,52");
         }
 
-        ds[numDServers]: Dserver {
+        ds[numDservers]: Dserver {
             parameters:
                 @display("p=265,258");
         }
 
-        sch[numDServers]: Scheduler {
+        sch[numDservers]: Scheduler {
             parameters:
                 @display("p=121,258");
         }
 
         ms: Mserver {
             parameters:
+                numDservers = numDservers;
                 @display("p=353,146");
         }
         switch: Router {
@@ -63,8 +65,8 @@ network pfs
                 @display("p=189,146");
             gates:
                 c[numClients];
-                ds[numDServers];
-                sch[numDServers];
+                ds[numDservers];
+                sch[numDservers];
         }
     connections:
         // C-Router channels
@@ -73,7 +75,7 @@ network pfs
         }
 
         // Router-DS and Router-DSscheduler channels
-        for i=0..numDServers-1 {
+        for i=0..numDservers-1 {
             switch.ds[i] <--> Channel <--> ds[i].g;
             switch.sch[i] <--> Channel <--> sch[i].g;
         }

@@ -15,8 +15,9 @@
 
 #include "scheduler/SFQ.h"
 
-SFQ::SFQ(int deg):IQueue(deg) {
+SFQ::SFQ(int deg, int totalc):IQueue(deg) {
 	vtime = 0;
+	totalClients = totalc;
 	for(int i = 0; i < MAX_APP; i ++)
 		maxftags[i] = 0;
 	SET_WEIGHT
@@ -48,10 +49,10 @@ gPacket * SFQ::dispatchNext(){
 	int minindex = -1;
 
 	// Random, for fairness.
-	int start = (float)rand() / RAND_MAX * C_TOTAL;
+	int start = (float)rand() / RAND_MAX * totalClients;
 	bool firstround = true;
 	for(int i = start; ; i ++){
-		if(i == C_TOTAL)
+		if(i == totalClients)
 			i = 0;
 		if(i == start){
 			if(firstround == true)

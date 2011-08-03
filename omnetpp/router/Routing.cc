@@ -24,7 +24,7 @@ void Routing::handleMessage(cMessage *msg)
 		send(msg, "msout");
 		break;
 	case LAYOUT_RESP:
-		send(msg, "cout", ((qPacket *)msg)->getId() / CID_OFFSET);
+		send(msg, "cout", ((qPacket *)msg)->getId() / CID_OFFSET_IN_PID);
 		break;
 	case JOB_REQ:
 		send(msg, "schout", ((gPacket *)msg)->getDecision());
@@ -36,7 +36,7 @@ void Routing::handleMessage(cMessage *msg)
 		send(msg, "schout", ((gPacket *)msg)->getDecision());
 		break;
 	case JOB_RESP:
-		send(msg, "cout", ((gPacket *)msg)->getId() / CID_OFFSET);
+		send(msg, "cout", ((gPacket *)msg)->getId() / CID_OFFSET_IN_PID);
 		break;
 	}
 }

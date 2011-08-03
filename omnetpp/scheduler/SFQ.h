@@ -29,6 +29,7 @@ using namespace std;
 
 class SFQ : public IQueue{
 protected:
+	int totalClients;
 	struct Job{
 		gPacket * gpkt;
 		double stag; // The start tags for all applications
@@ -40,7 +41,7 @@ protected:
 	double vtime; // virtual time
 
 public:
-	SFQ(int);
+	SFQ(int, int);
 	gPacket * dispatchNext();
 	void pushWaitQ(gPacket *);
 	void pushOsQ(Job *);

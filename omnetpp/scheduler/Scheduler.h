@@ -22,6 +22,11 @@
 
 class Scheduler : public cSimpleModule{
 protected:
+	int algorithm;
+	int degree;
+	double newjob_proc_time;
+	double finjob_proc_time;
+	int numClients;
 	IQueue * queue;
 public:
 	Scheduler();

@@ -34,6 +34,14 @@ public:
 		filereq_type(long id);
 	};
 protected:
+    int pagesize;
+    int totalpage;
+    int degree;
+    int app_data_range;
+    double cache_r_speed;
+    double cache_w_speed;
+    int max_pr_per_req;
+
 	list<filereq_type *> * fileReqList;
 	ICache * cache;
 	FIFO * fileReqQ;
@@ -51,6 +59,7 @@ public:
 	void sendToDSD(gPacket *);
 	void sendToDisk(gPacket *);
 //	int getCachedSize(gPacket *, ICache::pr_type *);
+	void finish();
 	virtual ~LocalFS();
 };
 

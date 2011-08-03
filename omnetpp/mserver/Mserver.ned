@@ -21,8 +21,11 @@ package mserver;
 simple Mserver
 {
     parameters:
-        @display("i=device/mainframe");
         bool sendInitialMessage = false;
+        int numDservers;
+        double ms_proc_time;
+        string layout_input_path;
+        @display("i=device/mainframe");
     gates:
         inout g;
 }

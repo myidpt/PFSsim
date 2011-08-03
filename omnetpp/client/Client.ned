@@ -21,6 +21,11 @@ package client;
 simple Client
 {
     parameters:
+        double trc_proc_time;
+        double pkt_proc_time;
+        string trc_path_prefix;
+        string rslt_path_prefix;
+        
         @display("i=device/pc2");
         bool sendInitialMessage = true;
     gates:

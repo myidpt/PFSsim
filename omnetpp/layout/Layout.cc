@@ -25,22 +25,22 @@ void Layout::setWindowSize(long size){
 	windowSize = size;
 }
 void Layout::setServerNum(int num){
-	if(num > MAX_DS_NUM)
-		serverNum = MAX_DS_NUM;
+	if(num > MAX_DS)
+		serverNum = MAX_DS;
 	else
 		serverNum = num;
 }
 void Layout::setServerList(int servernum, int list[]){
-	if(servernum > MAX_DS_NUM)
-		serverNum = MAX_DS_NUM;
+	if(servernum > MAX_DS)
+		serverNum = MAX_DS;
 	else
 		serverNum = servernum;
 	for(int i = 0; i < serverNum; i ++)
 		serverList[i] = list[i];
 }
 void Layout::setServerShares(int servernum, long size[]){
-	if(servernum > MAX_DS_NUM)
-		serverNum = MAX_DS_NUM;
+	if(servernum > MAX_DS)
+		serverNum = MAX_DS;
 	else
 		serverNum = servernum;
 	windowSize = 0;

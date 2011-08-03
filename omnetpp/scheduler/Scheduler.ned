@@ -21,6 +21,11 @@ package scheduler;
 simple Scheduler
 {
     parameters:
+        int algorithm;
+        int degree;
+        double newjob_proc_time;
+        double finjob_proc_time;
+        int numClients;
         @display("i=device/server2");
         bool sendInitialMessage = false;
     gates:

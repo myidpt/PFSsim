@@ -29,7 +29,7 @@ Trace::Trace(int id, double t, long long off, long s, int r, int a, int s2):
 	read = r;
 	app = a;
 	sync = s2;
-	for(int i = 0; i < MAX_DS_NUM; i ++){
+	for(int i = 0; i < MAX_DS; i ++){
 		serverWindow[i] = SW_NULL; // Mark as not related server.
 		dsoffsets[i] = 0; // Mark the data server offsets as 0.
 	}

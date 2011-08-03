@@ -21,6 +21,9 @@
 
 class DSdaemon : public cSimpleModule{
 protected:
+	double newjob_proc_time;
+	double finjob_proc_time;
+	int degree;
 	FIFO * queue;
 public:
 	DSdaemon();

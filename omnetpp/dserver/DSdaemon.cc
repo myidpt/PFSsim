@@ -24,7 +24,10 @@ DSdaemon::DSdaemon() {
 }
 
 void DSdaemon::initialize(){
-	queue = new FIFO(DSD_DEGREE);
+	degree = par("degree").longValue();
+	newjob_proc_time = par("newjob_proc_time").doubleValue();
+	finjob_proc_time = par("finjob_proc_time").doubleValue();
+	queue = new FIFO(degree);
 }
 
 void DSdaemon::handleMessage(cMessage * cmsg) {
@@ -53,8 +56,8 @@ void DSdaemon::handleMessage(cMessage * cmsg) {
 void DSdaemon::handleNewJob(gPacket * gpkt){
 	gpkt->setArrivaltime(SIMTIME_DBL(simTime()));
 	gpkt->setKind(LFILE_REQ); // turn to DATA_REQ
-	if(DSD_NEWJOB_PROC_TIME != 0){ // Consider the delay on the data server delay.
-		scheduleAt((simtime_t)(SIMTIME_DBL(simTime()) + DSD_NEWJOB_PROC_TIME), gpkt);
+	if(newjob_proc_time != 0){ // Consider the delay on the data server delay.
+		scheduleAt((simtime_t)(SIMTIME_DBL(simTime()) + newjob_proc_time), gpkt);
 	}
 	else{
 		handleDataReq(gpkt);
@@ -69,8 +72,8 @@ void DSdaemon::handleDataReq(gPacket * gpkt){
 void DSdaemon::handleDataResp(gPacket * gpkt){
 	queue->popOsQ(gpkt->getId());
 	gpkt->setKind(JOB_FIN);
-	if(DSD_FINJOB_PROC_TIME != 0){ // Consider the delay on the data server delay.
-		scheduleAt((simtime_t)(SIMTIME_DBL(simTime()) + DSD_FINJOB_PROC_TIME), gpkt);
+	if(finjob_proc_time != 0){ // Consider the delay on the data server delay.
+		scheduleAt((simtime_t)(SIMTIME_DBL(simTime()) + finjob_proc_time), gpkt);
 	}
 	else{
 		sendToEth(gpkt);

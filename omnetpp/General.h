@@ -7,20 +7,18 @@
 
 #ifndef GENERAL_H_
 #define GENERAL_H_
-#include "client/Clientspecs.h"
-#include "dserver/Dserverspecs.h"
-#include "scheduler/Schedulerspecs.h"
-#include "mserver/Mserverspecs.h"
 #include "cache/ICache.h"
 #include "cache/NRU.h"
-#include "layout/Layout.h"
 
 #define SMALLDBL 0.000001
 
-#define MAX_TIME 36000 // The time limit on the simulation.
-
+#define MAX_APP 256 // The maximum number of applications.
+#define MAX_DS 1024
 #define TRC_MAXSIZE 0x40000000 // According to PVFS 0x40000000, 1GB
 #define JOB_MAXSIZE 0xa00000 // According to PVFS 0xa00000, 10MB
+#define MAX_TIME 36000 // The time limit on the simulation.
+
+#define CID_OFFSET_IN_PID 10000 // The offset of the Client ID in the packet IDs.
 #define LOWOFFSET_RANGE 0x800000 // offset = lowoffset + lowoffset_range * highoffset
 
 // For messages types
@@ -48,6 +46,9 @@
 #define PVFS_SYS_LAYOUT_ROUND_ROBIN 2
 #define PVFS_SYS_LAYOUT_RANDOM 3
 #define PVFS_SYS_LAYOUT_LIST 4
+
+#define FIFO_ALG 0
+#define SFQ_ALG 1
 
 #define DEBUG
 

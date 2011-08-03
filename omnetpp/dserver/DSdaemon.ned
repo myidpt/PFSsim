@@ -19,6 +19,9 @@ simple DSdaemon
 {
     parameters:
         @display("i=device/device");
+        double newjob_proc_time;
+        double finjob_proc_time;
+        int degree;
     gates:
         inout eth;
         inout lfs;

@@ -18,12 +18,16 @@
 
 Define_Module(Disk);
 
+int Disk::idInit = 0;
+
 Disk::Disk() {
 }
 
 void Disk::initialize(){
-	myId = (getId() - DISK_ID_BASE) / 3;
-	portno = BASE_PORT + myId; // Port number is got by this.
+	degree = par("degree").longValue();
+	base_port = par("base_port").longValue();
+	myId = idInit ++;
+	portno = base_port + myId; // Port number is got by this.
 
 	if(sock_init(portno) == -1){
 		fprintf(stderr, "Socket creation failure.\n");
@@ -31,7 +35,7 @@ void Disk::initialize(){
 	}
 
 	outstanding = 0;
-	queue = new FIFO(DISK_DEGREE);
+	queue = new FIFO(degree);
 
 	syncNojob = (struct syncjob_type *)malloc(sizeof(struct syncjob_type));
 	bzero((char *)syncNojob, sizeof(struct syncjob_type));

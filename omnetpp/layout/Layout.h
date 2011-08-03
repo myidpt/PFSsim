@@ -16,9 +16,9 @@
 #ifndef LAYOUT_H_
 #define LAYOUT_H_
 
+#include "../General.h"
 #include "packet/QPacket_m.h"
 
-#include "../General.h"
 /*  An example data layout in a window:
  *
  *  If the data layout parameters are set to be:
@@ -38,13 +38,13 @@
  */
 
 
-class Layout : public cSimpleModule{
+class Layout {
 private:
 	int appId;
 	long windowSize; // The size of the data in a window.
 	int serverNum; // Number of DServer storing this requested data.
-	int serverList[MAX_DS_NUM]; // The list of DServer indexes storing this requested data.
-	long serverShares[MAX_DS_NUM]; // The size of data in a window on each server.
+	int serverList[MAX_DS]; // The list of DServer indexes storing this requested data.
+	long serverShares[MAX_DS]; // The size of data in a window on each server.
 public:
 	Layout(int id);
 	virtual ~Layout();

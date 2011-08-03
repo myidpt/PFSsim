@@ -16,7 +16,7 @@ for i in range(0, 32):
 	f = open(name, 'w')
 	time = random.random()
 	sync = 0
-	for i in range(0, 10):
+	for i in range(0, 20):
 		f.write('%(t)lf %(o)ld %(s)ld %(r)d %(a)d %(s2)d\n' %{"t":time,"o":offset,"s":size,"r":read,"a":app,"s2":sync})
 		offset += 500000
 		sync = 1

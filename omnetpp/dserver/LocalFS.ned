@@ -17,6 +17,13 @@ package dserver;
 
 simple LocalFS {
     parameters:
+        int pagesize;
+        int totalpage;
+        int degree;
+    	int app_data_range;
+        double cache_r_speed; // The time cost of reading a page in cache.
+        double cache_w_speed; // The time cost of writing a page in cache.
+        int max_pr_per_req; // The maximum number of disk access page-ranges a request will incur. Internal use.
         @display("i=device/memory");
     gates:
         inout dsd;

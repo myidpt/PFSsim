@@ -33,8 +33,8 @@ private:
 
 	int myId;
 	long long offset; // The offset (start edge) of the entire data.
-	long long dsoffsets[MAX_DS_NUM]; // The offset of the data stored on each data server.
-	long serverWindow[MAX_DS_NUM]; // The window for the packets waiting for reply.
+	long long dsoffsets[MAX_DS]; // The offset of the data stored on each data server.
+	long serverWindow[MAX_DS]; // The window for the packets waiting for reply.
 	// >0: unsent (the quantity indicates the data amount) / SW_SENT / SW_RECEIVED / SW_NULL
 	long size; // The total size of the data.
 	long unProcessedSize; // The size of the data whose packets are still not put into the window.

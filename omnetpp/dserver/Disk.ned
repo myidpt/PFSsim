@@ -18,6 +18,8 @@ package dserver;
 simple Disk
 {
     parameters:
+        int degree;
+        int base_port;
         @display("i=device/disk");
     gates:
         inout g;

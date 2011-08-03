@@ -19,6 +19,8 @@ message gPacket extends cPacket
     
     double risetime = 0; // The time the job is rised on the client.
     double submittime = 0; // The time the job is submitted from the client.
+    double interceptiontime = 0; // The time the job is intercepted by the scheduler.
+    double scheduletime = 0; // The time the job is scheduled at the scheduler.
     double arrivaltime = 0; // The time the job arrives at the data server.
     double dispatchtime = 0; // The time the job is dispatched on the data server.
     double finishtime = 0; // The finish time of the job, at disk.

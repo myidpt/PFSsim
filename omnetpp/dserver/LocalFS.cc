@@ -36,9 +36,16 @@ LocalFS::filereq_type::filereq_type(long id){
 }
 
 void LocalFS::initialize(){
+    pagesize = par("pagesize").longValue();
+    totalpage = par("totalpage").longValue();
+    degree  = par("degree").longValue();
+    app_data_range = par("app_data_range").longValue();
+    cache_r_speed = par("cache_r_speed").doubleValue();
+    cache_w_speed = par("cache_w_speed").doubleValue();
+    max_pr_per_req = par("max_pr_per_req").longValue();
 
-	cache = new NRU(MAX_PAGENUM);
-	fileReqQ = new FIFO(LOCALFS_DEGREE);
+	cache = new NRU(totalpage);
+	fileReqQ = new FIFO(degree);
 	fileReqList = new list<filereq_type *>;
 }
 
@@ -99,13 +106,13 @@ void LocalFS::dispatchNextFileReq(){
 	// Assumption: the data for one application are stored continuously on the disk.
 	// The physical address in its disk area is calculated by the following.
 	long long req_data_pageoffset =
-		(filereqpkt->getHighoffset() * LOWOFFSET_RANGE + filereqpkt->getLowoffset()) / PAGESIZE;
-	long req_app_pageoffset = filereqpkt->getApp() * APP_DATA_RANGE;
+		(filereqpkt->getHighoffset() * LOWOFFSET_RANGE + filereqpkt->getLowoffset()) / pagesize;
+	long req_app_pageoffset = filereqpkt->getApp() * app_data_range;
 
-	// Get the start and end page indexes of the request - just divide the offsets by PAGESIZE.
+	// Get the start and end page indexes of the request - just divide the offsets by pagesize.
 	long long req_pagestart = req_data_pageoffset + req_app_pageoffset;
-	long req_pagenum = filereqpkt->getSize() / PAGESIZE;
-	if(filereqpkt->getSize() % PAGESIZE > 0) // You should consider the remainder as another page.
+	long req_pagenum = filereqpkt->getSize() / pagesize;
+	if(filereqpkt->getSize() % pagesize > 0) // You should consider the remainder as another page.
 		req_pagenum ++;
 	long long req_pageend = req_pagestart + req_pagenum;
 	ICache::pr_type * req_pagerange = new ICache::pr_type(req_pagestart, req_pageend,
@@ -117,14 +124,14 @@ void LocalFS::dispatchNextFileReq(){
 		if(cachedsize != 0){
 			fr->accessingCache = true;
 			scheduleAt((simtime_t)(SIMTIME_DBL(simTime()) +
-					cachedsize * CACHE_R_SPEED), filereqpkt); // Schedule to the future according to the read speed.
+					cachedsize * cache_r_speed), filereqpkt); // Schedule to the future according to the read speed.
 		}
 	}else{ // If it is a write operation, the size is the entire data to be written.
 		cachedsize = filereqpkt->getSize();
 		if(cachedsize != 0){
 			fr->accessingCache = true;
 			scheduleAt((simtime_t)(SIMTIME_DBL(simTime()) +
-					cachedsize * CACHE_W_SPEED), filereqpkt); // Schedule to the future according to the write speed.
+					cachedsize * cache_w_speed), filereqpkt); // Schedule to the future according to the write speed.
 		}
 	}
 
@@ -196,7 +203,7 @@ void LocalFS::dispatchNextDiskReq(filereq_type * fr){
 		return;
 	gPacket * diskreq = NULL;
 	diskreq = new gPacket("DiskRequest");
-	diskreq->setId(fr->fileReqId * MAX_PR_PER_REQ + fr->blkReqId); // The disk requests must have IDs to distinguish.
+	diskreq->setId(fr->fileReqId * max_pr_per_req + fr->blkReqId); // The disk requests must have IDs to distinguish.
 	fr->blkReqId ++;
 	diskreq->setKind(BLK_REQ);
 	// Disk access is also in the unit of KB.
@@ -211,7 +218,7 @@ void LocalFS::dispatchNextDiskReq(filereq_type * fr){
 
 void LocalFS::handleBlkResp(gPacket * resp){
 	// The response comes back.
-	filereq_type * fr = findFileReq(resp->getId()/MAX_PR_PER_REQ);
+	filereq_type * fr = findFileReq(resp->getId()/max_pr_per_req);
 	if(fr == NULL)
 		return;
 	delete resp;
@@ -239,6 +246,10 @@ void LocalFS::handleCacheAccessFinish(gPacket * gpkt){
 		dispatchNextFileReq();
 	}
 	// Otherwise, the response is triggered by the disk access results.
+}
+
+void LocalFS::finish(){
+
 }
 
 LocalFS::~LocalFS() {
