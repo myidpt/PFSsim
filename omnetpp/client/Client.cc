@@ -111,6 +111,7 @@ int Client::readNextTrace(){
 	long long offset;
 	int size;
 	int read;
+	int fileid;
 	int appid;
 	int sync;
 	char line[201];
@@ -133,8 +134,8 @@ int Client::readNextTrace(){
 			break;
 	}
 
-	sscanf(line, "%lf %lld %d %d %d %d",
-			&time, &offset, &size, &read, &appid, &sync);
+	sscanf(line, "%lf %d %lld %d %d %d %d",
+			&time, &fileid, &offset, &size, &read, &appid, &sync);
 
 	if(size > TRC_MAXSIZE){
 		fprintf(stderr, "ERROR Client #%d: Size %d is bigger than TRC_MAXSIZE %d, set it to be TRC_MAXSIZE.\n",
@@ -145,7 +146,7 @@ int Client::readNextTrace(){
 	if(sync == 1 || (time < SIMTIME_DBL(simTime()) + trc_proc_time))
 		time = SIMTIME_DBL(simTime()) + trc_proc_time;
 
-	trace = new Trace(trcId++, time, offset, size, read, appid, sync);
+	trace = new Trace(trcId++, time, fileid, offset, size, read, appid, sync);
 	scheduleAt(time, traceSync);
 
 	return 1;
@@ -165,7 +166,7 @@ int Client::scheduleNextPackets(){
 	if(gpkt == NULL)
 		return 0; // Can't schedule more at this moment.
 
-	gpkt->setId(pktId);
+	gpkt->setID(pktId);
 	gpkt->setRisetime(SIMTIME_DBL(simTime()) + pkt_proc_time);
 	gpkt->setKind(SELF_EVENT);
 
@@ -176,8 +177,8 @@ int Client::scheduleNextPackets(){
 
 int Client::sendLayoutQuery(){
 	qPacket * qpkt = new qPacket("qpacket");
-	qpkt->setId(pktId);// Important, other wise the response packet won't know where to be sent.
-	qpkt->setApp(trace->getApp());
+	qpkt->setID(pktId);// Important, other wise the response packet won't know where to be sent.
+	qpkt->setFileId(trace->getFileId());
 	qpkt->setKind(LAYOUT_REQ);
 	qpkt->setByteLength(100); // schedule query: assume Length 100.
 	sendSafe(qpkt);
@@ -193,7 +194,7 @@ void Client::handleLayoutResponse(qPacket * qpkt){
 
 void Client::sendJobPacket(gPacket * gpkt){
 	if(gpkt->getDecision() == UNSCHEDULED){
-		fprintf(stderr, "ERROR: the packet is UNSCHEDULED.");
+		fprintf(stderr, "[ERROR]Clinet: the packet is UNSCHEDULED.");
 		return;
 	}
 	gpkt->setKind(JOB_REQ);
@@ -232,10 +233,10 @@ void Client::sendSafe(cMessage * cmsg){
 // General information
 void Client::trcStatistic(Trace * trc){
 	fprintf(rfp, "Trace #%d: %d %lld %ld {%lf %lf}\n",
-			trc->getId(),
-			trc->getApp(),
+			trc->getID(),
+			trc->getFileId(),
 			trc->getOffset(),
-			trc->getSize(),
+			trc->getTotalSize(),
 			trc->getStarttime(),
 			trc->getFinishtime());
 }
@@ -244,11 +245,11 @@ void Client::trcStatistic(Trace * trc){
 void Client::pktStatistic(gPacket * gpkt){
 	fprintf(rfp, "   Packet #%ld: %lld %d %d %d %d\n"
 			"\t\t%lf %lf %lf %lf %lf %lf %lf\n",
-			gpkt->getId(),
+			gpkt->getID(),
 			(long long)(gpkt->getLowoffset() + gpkt->getHighoffset() * LOWOFFSET_RANGE),
 			gpkt->getSize(),
 			gpkt->getRead(),
-			gpkt->getApp(), // End of basic info
+			gpkt->getFileId(), // End of basic info
 			gpkt->getDecision(),
 
 			gpkt->getRisetime(), // Time info
@@ -264,7 +265,7 @@ void Client::pktStatistic(gPacket * gpkt){
 void Client::statistic(gPacket * gpkt){
 	double proc = gpkt->getFinishtime() - gpkt->getDispatchtime();
 	stat_time += proc;
-	fprintf(rfp, "%ld\t%lf\t%lf\n", gpkt->getId(), proc, stat_time);
+	fprintf(rfp, "%ld\t%lf\t%lf\n", gpkt->getID(), proc, stat_time);
 }
 */
 //Throughput and Delay information

@@ -16,59 +16,58 @@
 #include "scheduler/FIFO.h"
 
 FIFO::FIFO(int deg):IQueue(deg) {
-	waitQ = new list<gPacket*>;
-	osQ = new list<gPacket*>;
 }
 
-void FIFO::pushWaitQ(gPacket * gpkt){
-	waitQ->push_back(gpkt);
-//	fprintf(sfile, "%lf\t%ld A\n", SIMTIME_DBL(simTime()), gpkt->getId());
+// Push one job to the waitQ.
+void FIFO::pushWaitQ(bPacket * job){
+	waitQ.push_back(job);
+//	fprintf(sfile, "%lf\t%ld A\n", SIMTIME_DBL(simTime()), gpkt->getID());
 }
 
-gPacket * FIFO::dispatchNext(){
-	if(waitQ->empty())// No more jobs in queue.
+// Pop one job from the front of the waitQ, and push it to the osQ. Return the job.
+bPacket * FIFO::dispatchNext(){
+	if(waitQ.empty())// No more jobs in queue.
 		return NULL;
-	if((signed int)(osQ->size()) >= degree) // If outstanding queue is bigger than the degree, stop dispatching more jobs.
+	if((signed int)(osQ.size()) >= IQueue::degree) // If outstanding queue is bigger than the degree, stop dispatching more jobs.
 		return NULL;
-	gPacket * ret = (gPacket *)waitQ->front();
-	waitQ->pop_front();
-	osQ->push_back(ret); // Push into osQ->
-//	fprintf(sfile, "%lf\t%ld D\n", SIMTIME_DBL(simTime()), ret->getId());
+	bPacket * ret = (bPacket *)waitQ.front();
+	waitQ.pop_front();
+	osQ.push_back(ret); // Push into osQ.
+//	fprintf(sfile, "%lf\t%ld D\n", SIMTIME_DBL(simTime()), ret->getID());
 	return ret;
 }
 
-gPacket * FIFO::popOsQ(long id){
-	gPacket * ret = NULL;
-	list<gPacket*>::iterator i;
-	for(i=osQ->begin(); i != osQ->end(); i++){
-		if((*i)->getId() == id){
+// Pop the element with ID == id from osQ, and return it.
+bPacket * FIFO::popOsQ(long id){
+	bPacket * ret = NULL;
+	list<bPacket *>::iterator i;
+	for(i=osQ.begin(); i != osQ.end(); i++){
+		if((*i)->getID() == id){
 			ret = *i;
-			osQ->erase(i);
+			osQ.erase(i);
 			break;
 		}
 	}
 //	if(ret != NULL)
-//		fprintf(sfile, "%lf\t%ld F\n", SIMTIME_DBL(simTime()), ret->getId());
+//		fprintf(sfile, "%lf\t%ld F\n", SIMTIME_DBL(simTime()), ret->getID());
 	return ret;
 }
 
-gPacket * FIFO::popOsQ(){
-	gPacket * ret = NULL;
-	list<gPacket*>::iterator i = osQ->begin();
+// Pop the front element from osQ, and return it.
+bPacket * FIFO::popOsQ(){
+	bPacket * ret = NULL;
+	list<bPacket *>::iterator i = osQ.begin();
 	ret = *i;
-	osQ->erase(i);
+	osQ.erase(i);
 	return ret;
 }
 
-//sPacket * FIFO::overhear(sPacket * spkt, int i){
-//	return NULL;
-//}
-
-gPacket * FIFO::queryJob(long id){
-	gPacket * ret = NULL;
-	list<gPacket*>::iterator i;
-	for(i=osQ->begin(); i != osQ->end(); i++){
-		if((*i)->getId() == id){
+// Only return the job with ID == id, do not mutate the queue.
+bPacket * FIFO::queryJob(long id){
+	bPacket * ret = NULL;
+	list<bPacket *>::iterator i;
+	for(i=osQ.begin(); i != osQ.end(); i++){
+		if((*i)->getID() == id){
 			ret = *i;
 			break;
 		}

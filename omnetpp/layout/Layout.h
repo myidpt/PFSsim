@@ -16,8 +16,7 @@
 #ifndef LAYOUT_H_
 #define LAYOUT_H_
 
-#include "../General.h"
-#include "packet/QPacket_m.h"
+#include "General.h"
 
 /*  An example data layout in a window:
  *
@@ -40,27 +39,28 @@
 
 class Layout {
 private:
-	int appId;
+	int fileId;
 	long windowSize; // The size of the data in a window.
 	int serverNum; // Number of DServer storing this requested data.
 	int serverList[MAX_DS]; // The list of DServer indexes storing this requested data.
-	long serverShares[MAX_DS]; // The size of data in a window on each server.
+	long serverStripeSizes[MAX_DS]; // The size of data chunk assigned to the server.
+//	long serverShares[MAX_DS]; // The size of data in a window on each server.
 public:
 	Layout(int id);
 	virtual ~Layout();
 	void setWindowSize(long size);
 	void setServerNum(int num);
 	void setServerList(int servernum, int list[]);
-	void setServerShares(int servernum, long size[]);
+	void setServerStripeSizes(int servernum, long size[]);
 	void setLayout(qPacket *);
 	void setqPacket(qPacket *);
 	void setServerID(int index, int serverID);
-	void setServerShare(int index, long share);
-	int getAppID();
+	void setServerStripeSize(int index, long share);
+	int getFileID();
 	long getWindowSize();
 	int getServerNum();
 	int getServerID(int index); // The input index is the index in the serverList or serverShares.
-	long getServerShare(int index); // The input index is the index in the serverList or serverShares.
+	long getServerStripeSize(int index); // The input index is the index in the serverList or serverShares.
 	int findServerIndex(int id); // Find a server's index in the list given its ID.
 	void calculateWindowSize();
 };

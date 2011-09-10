@@ -16,8 +16,8 @@
 #include "Layout.h"
 
 Layout::Layout(int id) {
-	appId = id;
-	setWindowSize(0);
+	fileId = id;
+	setWindowSize(-1);
 	setServerNum(0);
 }
 
@@ -38,14 +38,14 @@ void Layout::setServerList(int servernum, int list[]){
 	for(int i = 0; i < serverNum; i ++)
 		serverList[i] = list[i];
 }
-void Layout::setServerShares(int servernum, long size[]){
+void Layout::setServerStripeSizes(int servernum, long size[]){
 	if(servernum > MAX_DS)
 		serverNum = MAX_DS;
 	else
 		serverNum = servernum;
 	windowSize = 0;
 	for(int i = 0; i < serverNum; i ++){
-		serverShares[i] = size[i];
+		serverStripeSizes[i] = size[i];
 		windowSize = windowSize + size[i]; // windowSize = sum {size[0...servernum-1]}
 	}
 }
@@ -54,28 +54,30 @@ void Layout::setLayout(qPacket * qpkt){
 	windowSize = 0;
 	for(int i = 0; i < serverNum; i ++){
 		serverList[i] = qpkt->getDsList(i);
-		serverShares[i] = qpkt->getDsShares(i);
-		windowSize = windowSize + serverShares[i];
+		serverStripeSizes[i] = qpkt->getDsStripeSizes(i);
+		windowSize = windowSize + serverStripeSizes[i];
 	}
 }
 void Layout::setqPacket(qPacket * qpkt){
 	qpkt->setDsNum(serverNum);
 	for(int i = 0; i < serverNum; i ++){
 		qpkt->setDsList(i, serverList[i]);
-		qpkt->setDsShares(i, serverShares[i]);
+		qpkt->setDsStripeSizes(i, serverStripeSizes[i]);
 	}
 }
 
 void Layout::setServerID(int index, int serverid){
 	serverList[index] = serverid;
 }
-void Layout::setServerShare(int index, long size){
-	serverShares[index] = size;
+void Layout::setServerStripeSize(int index, long size){
+	serverStripeSizes[index] = size;
 }
-int Layout::getAppID(){
-	return appId;
+int Layout::getFileID(){
+	return fileId;
 }
 long Layout::getWindowSize(){
+	if(windowSize == -1)
+		calculateWindowSize();
 	return windowSize;
 }
 int Layout::getServerNum(){
@@ -87,11 +89,11 @@ int Layout::getServerID(int index){
 		return 0;
 	return serverList[index];
 }
-long Layout::getServerShare(int index){
+long Layout::getServerStripeSize(int index){
 	// assert: index < serverNum
 	if(index >= serverNum)
 		return 0;
-	return serverShares[index];
+	return serverStripeSizes[index];
 }
 int Layout::findServerIndex(int id){
 	for(int i = 0; i < serverNum; i ++)
@@ -100,8 +102,14 @@ int Layout::findServerIndex(int id){
 	return -1;
 }
 void Layout::calculateWindowSize(){
+	windowSize = 0;
 	for(int i = 0; i < serverNum; i ++)
-		windowSize += serverShares[i];
+		windowSize += serverStripeSizes[i];
+#ifdef DEBUG
+	printf("calculateWindowSize == %ld, serverNum == %d, serverList[0] == %d, serverList[1] == %d,"
+			" serverStripeSizes[0] == %ld, [1] == %ld.\n",windowSize, serverNum, serverList[0], serverList[1],
+			serverStripeSizes[0], serverStripeSizes[1]);
+#endif
 }
 
 Layout::~Layout() {

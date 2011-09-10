@@ -17,24 +17,21 @@
 #define FIFO_H_
 
 #include "IQueue.h"
-#include "packet/GPacket_m.h"
-//#include "packet/SPacket_m.h"
 
-#include "../General.h"
+#include "General.h"
 using namespace std;
 
 class FIFO : public IQueue{
 private:
-	list<gPacket*> * waitQ;
-	list<gPacket*> * osQ;
+	list<bPacket *> waitQ;
+	list<bPacket *> osQ;
 public:
 	FIFO(int);
-	void pushWaitQ(gPacket *);
-	gPacket * dispatchNext();
-	gPacket * popOsQ(long id);
-	gPacket * popOsQ();
-//	sPacket * overhear(sPacket *, int); // No meaning
-	gPacket * queryJob(long id);
+	void pushWaitQ(bPacket *);
+	bPacket * dispatchNext();
+	bPacket * popOsQ(long id);
+	bPacket * popOsQ();
+	bPacket * queryJob(long id);
 };
 
 #endif /* FIFO_H_ */

@@ -67,7 +67,7 @@ void Scheduler::handleNewJob(gPacket * gpkt) { // from the client
 
 void Scheduler::handleFinishedJob(gPacket * gpkt){ // from the data server
 	gpkt->setKind(JOB_RESP); // let the router know: to the client
-	queue->popOsQ(gpkt->getId());
+	queue->popOsQ(gpkt->getID());
 	sendSafe(gpkt); // to the client
 	if(finjob_proc_time != 0){
 		scheduleAt((simtime_t)(SIMTIME_DBL(simTime()) + finjob_proc_time), gpkt);
@@ -79,7 +79,7 @@ void Scheduler::handleFinishedJob(gPacket * gpkt){ // from the data server
 void Scheduler::dispatchJobs(){
 	gPacket * jobtodispatch = NULL;
 	while(1){
-		jobtodispatch = queue->dispatchNext();
+		jobtodispatch = (gPacket *)queue->dispatchNext();
 		if(jobtodispatch != NULL){
 			jobtodispatch->setScheduletime(SIMTIME_DBL(simTime()));
 			sendSafe(jobtodispatch);

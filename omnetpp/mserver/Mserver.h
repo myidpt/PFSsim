@@ -19,14 +19,14 @@
 #include <time.h>
 #include <math.h>
 #include <omnetpp.h>
-#include "../General.h"
-#include "../layout/Layout.h"
+#include "General.h"
+#include "layout/Layout.h"
 
 class Mserver : public cSimpleModule{
 private:
 	double ms_proc_time;
-	Layout * layoutlist[MAX_APP];
-	int numApps;
+	Layout * layoutlist[MAX_FILE];
+	int numFiles;
 	int numDservers;
 	virtual void parseLayoutDoc(const char * fname);
 protected:

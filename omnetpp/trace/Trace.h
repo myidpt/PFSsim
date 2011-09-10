@@ -16,10 +16,8 @@
 #ifndef TRACE_H_
 #define TRACE_H_
 
-#include "packet/GPacket_m.h"
-#include "packet/QPacket_m.h"
-#include "../General.h"
-#include "../layout/Layout.h"
+#include "General.h"
+#include "layout/Layout.h"
 
 
 #define MAX_WINDOW_SIZE JOB_MAXSIZE
@@ -31,20 +29,27 @@ private:
 	const static int SW_RECEIVED; // -1: For the server window: received the reply for this request.
 	const static int SW_NULL; // -2: This data server slot does not need to be accessed.
 
+	const static int Max_ServerWindowTotalSize; // 10MB. Max transmission size in a single request.
+
 	int myId;
 	long long offset; // The offset (start edge) of the entire data.
 	long long dsoffsets[MAX_DS]; // The offset of the data stored on each data server.
 	long serverWindow[MAX_DS]; // The window for the packets waiting for reply.
 	// >0: unsent (the quantity indicates the data amount) / SW_SENT / SW_RECEIVED / SW_NULL
-	long size; // The total size of the data.
+	long totalSize; // The total size of the data.
 	long unProcessedSize; // The size of the data whose packets are still not put into the window.
+	long aggregateSize; // The aggregate size of the current window.
 	Layout * layout; // Specifies the layout of the data.
+
+	int offset_start_server; // To calculate the remainder.
+	long offset_start_position;
 /*
  * Explanation of data transmission process.
- *             offset           index   window
- * --------------[++++++++++++++++|****************|====================]----------------
- * <- unwanted ->|<-  finished  ->|<-transmitting->|<-  not sent yet  ->|<-  unwanted  ->
- *               |<------------------------size------------------------>|
+ *             offset           index    window
+ * --------------[++++++++++++++++|*****************|====================]----------------
+ * <- unwanted ->|<-  finished  ->|<--transmitting->|<-  not sent yet  ->|<-  unwanted  ->
+ *                                |<-aggregateSize->|<--unProcessedSize->|
+ *               |<---------------------totalSize----------------------->|
  *
  */
 	int read;
@@ -52,22 +57,25 @@ private:
 	double stime;
 	double ftime;
 	int sync;
+	int fileid;
 
 	gPacket * getNextgPacketFromWindow();
+	bool openNewWindow();
 //	int dsList[MAX_DS_NUM]; // the list of DServers storing this requested data.
 
 public:
-	Trace(int id, double stime, long long offset, long size, int read, int app, int sync);
+	Trace(int id, double stime, int fid, long long offset, long size, int read, int app, int sync);
 	gPacket * nextgPacket();
 	int finishedgPacket(gPacket *);
 	void setLayout(qPacket *);
 	double getStarttime();
 	double getFinishtime();
 	long long getOffset();
-	int getId();
-	long getSize();
+	int getID();
+	long getTotalSize();
 	int getRead();
 	int getApp();
+	int getFileId();
 	int getSync();
 	virtual ~Trace();
 };

@@ -15,10 +15,10 @@
 
 #ifndef SCHEDULER_H_
 #define SCHEDULER_H_
-#include "../General.h"
+#include "General.h"
 
-#include "FIFO.h"
-#include "SFQ.h"
+#include "scheduler/FIFO.h"
+#include "scheduler/SFQ.h"
 
 class Scheduler : public cSimpleModule{
 protected:

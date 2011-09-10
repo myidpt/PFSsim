@@ -20,28 +20,30 @@ SFQ::SFQ(int deg, int totalc):IQueue(deg) {
 	totalClients = totalc;
 	for(int i = 0; i < MAX_APP; i ++)
 		maxftags[i] = 0;
-	SET_WEIGHT
+	for(int wi = 0; wi < 1; wi ++){
+		IQueue::weight[wi] = 1000;
+	}
 }
 
-void SFQ::pushWaitQ(gPacket * gpkt){
+void SFQ::pushWaitQ(bPacket * pkt){
 	struct Job * job = (struct Job *)malloc(sizeof(struct Job));
-	int app = gpkt->getApp();
-	job->gpkt = gpkt;
+	int app = pkt->getApp();
+	job->pkt = pkt;
 
 	// stag(k) = max{ftag(k-1), vtime}
 	job->stag = maxftags[app];
 	if(vtime > job->stag)
 		job->stag = vtime;
 
-	job->ftag = job->stag + job->gpkt->getSize() / weight[app];
+	job->ftag = job->stag + job->pkt->getSize() / IQueue::weight[app];
 
-	maxftags[app] = job -> ftag;
+	maxftags[app] = job->ftag;
 
 	waitQ[app].push_back(job);
 }
 
-gPacket * SFQ::dispatchNext(){
-	if((signed int)(osQ.size()) >= degree) // If outstanding queue is bigger than the degree, stop dispatching more jobs.
+bPacket * SFQ::dispatchNext(){
+	if((signed int)(osQ.size()) >= IQueue::degree) // If outstanding queue is bigger than the degree, stop dispatching more jobs.
 		return NULL;
 
 	// Get the job with the lowest start tag.
@@ -73,13 +75,13 @@ gPacket * SFQ::dispatchNext(){
 	}
 
 	Job * job = waitQ[minindex].front();
-	gPacket * gpkt = job->gpkt;
+	bPacket * pkt = job->pkt;
 
 	waitQ[minindex].pop_front();
 	pushOsQ(job);
 	// Update vtime
 	vtime = job->stag;
-	return gpkt;
+	return pkt;
 }
 
 void SFQ::pushOsQ(Job * job){
@@ -87,7 +89,7 @@ void SFQ::pushOsQ(Job * job){
 		osQ.push_back(job);
 		return;
 	}
-	list<Job*>::iterator iter;
+	typename list<Job*>::iterator iter;
 	for(iter = osQ.begin(); iter != osQ.end(); iter ++){
 		if( ((Job *)(*iter))->stag > job->stag ){
 			osQ.insert(iter, job);
@@ -97,51 +99,44 @@ void SFQ::pushOsQ(Job * job){
 	osQ.push_back(job);
 }
 
-gPacket * SFQ::popOsQ(long id){
-	gPacket * gpkt = NULL;
+bPacket * SFQ::popOsQ(long id){
+	bPacket * pkt = NULL;
 	if(osQ.empty())
 		return NULL;
 
-	list<Job*>::iterator iter;
+	typename list<Job*>::iterator iter;
 	for(iter = osQ.begin(); iter != osQ.end(); iter ++){
-		if( ((Job *)(*iter))->gpkt->getId() == id ){
-			gpkt = ((Job *)(*iter))->gpkt;
+		if( ((Job *)(*iter))->pkt->getID() == id ){
+			pkt = ((Job *)(*iter))->pkt;
 			osQ.erase(iter);
 			free(*iter);
 			break;
 		}
 	}
-	if(gpkt == NULL){
+	if(pkt == NULL){
 		fprintf(stderr, "ERROR: Didn't find the job %ld in OsQ!\n", id);
 		fflush(stdout);
 		return NULL;
 	}
-
-#ifdef DEBUG
-//	fprintf(sfile, "\t\t%ld F @ %.2lf\n",
-//			gpkt->getId(), vtime);
-#endif
-
-	return gpkt;
+	return pkt;
 }
 
-
-gPacket * SFQ::queryJob(long id){
-	gPacket * gpkt = NULL;
+bPacket * SFQ::queryJob(long id){
+	bPacket * pkt = NULL;
 	if(osQ.empty())
 		return NULL;
 
 	list<Job*>::iterator iter;
 	for(iter = osQ.begin(); iter != osQ.end(); iter ++){
-		if( ((Job *)(*iter))->gpkt->getId() == id ){
-			gpkt = ((Job *)(*iter))->gpkt;
+		if( ((Job *)(*iter))->pkt->getID() == id ){
+			pkt = ((Job *)(*iter))->pkt;
 			break;
 		}
 	}
-	if(gpkt == NULL){
+	if(pkt == NULL){
 		fprintf(stderr, "ERROR: Didn't find the job %ld in OsQ!\n", id);
 		fflush(stdout);
 		return NULL;
 	}
-	return gpkt;
+	return pkt;
 }

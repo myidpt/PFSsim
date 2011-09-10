@@ -15,17 +15,20 @@
 
 #include "Trace.h"
 
-const int Trace::SW_SENT = 0;
+const int Trace::SW_NULL = 0;
 const int Trace::SW_RECEIVED = -1;
-const int Trace::SW_NULL = -2;
+const int Trace::SW_SENT = -2;
+const int Trace::Max_ServerWindowTotalSize = 10485760;
 
-Trace::Trace(int id, double t, long long off, long s, int r, int a, int s2):
+Trace::Trace(int id, double t, int fid, long long off, long s, int r, int a, int s2):
 	cNamedObject("Trace"){
 	myId = id;
 	stime = t;
+	fileid = fid;
 	offset = off;
-	size = s;
+	totalSize = s;
 	unProcessedSize = s;
+
 	read = r;
 	app = a;
 	sync = s2;
@@ -33,7 +36,17 @@ Trace::Trace(int id, double t, long long off, long s, int r, int a, int s2):
 		serverWindow[i] = SW_NULL; // Mark as not related server.
 		dsoffsets[i] = 0; // Mark the data server offsets as 0.
 	}
-	layout = new Layout(app); // Initialize the layout object
+/*
+	// Set up the current total window size.
+	if(Max_ServerWindowTotalSize < unProcessedSize){
+		aggregateSize = Max_ServerWindowTotalSize;
+		unProcessedSize -= Max_ServerWindowTotalSize;
+	}else{
+		aggregateSize = unProcessedSize;
+		unProcessedSize = 0;
+	}
+*/
+	layout = new Layout(fileid); // Initialize the layout object
 }
 
 // Check if there are still unsent packets in the window.
@@ -41,11 +54,13 @@ Trace::Trace(int id, double t, long long off, long s, int r, int a, int s2):
 gPacket * Trace::getNextgPacketFromWindow(){
 	for(int i = 0; i < layout->getServerNum(); i ++){
 		if(serverWindow[i] > 0){ // Unsent
-			gPacket * gpkt = new gPacket("gpacket"); // Create new gPacket
+			gPacket * gpkt = new gPacket("JOB_REQ"); // Create new gPacket
 			gpkt->setLowoffset(dsoffsets[i] % LOWOFFSET_RANGE);
 			gpkt->setHighoffset(dsoffsets[i] / LOWOFFSET_RANGE);
 			gpkt->setSize(serverWindow[i]);
 			gpkt->setRead(read);
+			gpkt->setFileId(fileid);
+			gpkt->setAggregateSize(aggregateSize);
 			gpkt->setApp(app);
 			gpkt->setDecision(layout->getServerID(i));
 			serverWindow[i] = SW_SENT;
@@ -53,6 +68,68 @@ gPacket * Trace::getNextgPacketFromWindow(){
 		}
 	}
 	return NULL;
+}
+
+/* This function opens a new window, unless one the the following happens:
+ * 1. Un-received packets exist.
+ * 2. It has sent all its packets, but this is the last window.
+ */
+bool Trace::openNewWindow(){
+	for(int i = 0; i < layout->getServerNum(); i ++){
+		if(serverWindow[i] == SW_SENT){ // Un-received packets exist.
+			return false;
+		}
+	}
+
+	if(unProcessedSize == 0){ // The last window is the already done.
+		return false;
+	}
+
+	// Current window is all done (sending and receiving), and next window exists.
+	// Do next window.
+	// Set up the current total window size, i.e., aggregateSize.
+	if(Max_ServerWindowTotalSize < unProcessedSize){
+		aggregateSize = Max_ServerWindowTotalSize;
+		unProcessedSize -= Max_ServerWindowTotalSize;
+	}else{
+		aggregateSize = unProcessedSize;
+		unProcessedSize = 0;
+	}
+
+	// Set up the request size for each server.
+
+	// Init
+	for(int i = 0; i < layout->getServerNum(); i ++)
+		serverWindow[i] = SW_NULL;
+
+	long leftAggSize = aggregateSize;
+	long tmpsize;
+	bool firsttime = true;
+	for(int i = offset_start_server;; i ++){
+		if(i == layout->getServerNum())
+			i = 0;
+
+//		tmpsize = aggregateSize * layout->getServerStripeSize(i) / layout->getWindowSize();
+		// Do it window by window. May have multiple rounds.
+		if(leftAggSize == 0){
+			break;
+		}
+
+		tmpsize = layout->getServerStripeSize(i);
+		if(i == offset_start_server && firsttime){
+			tmpsize -= offset_start_position;
+			firsttime = false;
+		}
+
+		if(tmpsize < leftAggSize){
+			serverWindow[i] += tmpsize;
+			leftAggSize -= tmpsize;
+		}else{
+			serverWindow[i] += leftAggSize;
+			leftAggSize = 0;
+		}
+	}
+	return true;
 }
 
 /*
@@ -64,38 +141,19 @@ gPacket * Trace::getNextgPacketFromWindow(){
  */
 gPacket * Trace::nextgPacket() {
 	if (layout->getWindowSize() == 0){
-		fprintf(stderr, "ERROR Trace: the trace did not query the data layout.\n");
+		fprintf(stderr, "[ERROR] Trace: the trace did not query the data layout.\n");
 		return NULL;
 	}
 
-	// If the current window has not sent all the packets.
 	gPacket * gpkt = getNextgPacketFromWindow();
+	// If the current window has not sent all the packets.
 	if(gpkt != NULL){
 		return gpkt;
 	}
 
-	for(int i = 0; i < layout->getServerNum(); i ++){
-		if(serverWindow[i] == SW_SENT){ // Un-received packets exist.
-			return NULL;
-		}
-	}
-
-	if(unProcessedSize == 0){ // This is the last window, and it has sent all its packets.
+	// All the packets from the current window are sent.
+	if(! openNewWindow()){
 		return NULL;
-	}
-
-	// Current window is all done (sending and receiving), and next window exists.
-	// Do next window.
-	for(int i = 0; i < layout->getServerNum(); i ++){
-		if(unProcessedSize == 0){
-			serverWindow[i] = SW_NULL;
-		}else if(layout->getServerShare(i) < unProcessedSize){
-			serverWindow[i] = layout->getServerShare(i);
-			unProcessedSize -= layout->getServerShare(i);
-		}else{
-			serverWindow[i] = unProcessedSize;
-			unProcessedSize = 0;
-		}
 	}
 	return getNextgPacketFromWindow();
 }
@@ -108,7 +166,7 @@ int Trace::finishedgPacket(gPacket * gpkt){
 	// Mark the slot in the window as done. 0 -> 1
 	int serverindex = layout->findServerIndex(gpkt->getDecision());
 	if(serverindex < 0){
-		fprintf(stderr, "ERROR trace: received wrong packet from server #%d", gpkt->getDecision());
+		fprintf(stderr, "[ERROR] Trace: received wrong packet from server #%d\n", gpkt->getDecision());
 		return -1;
 	}
 
@@ -118,7 +176,7 @@ int Trace::finishedgPacket(gPacket * gpkt){
 
 	// Check if all the slots in the window are done.
 	for(int i = 0; i < layout->getServerNum(); i ++){
-		if(serverWindow[i] >= 0)
+		if(serverWindow[i] > 0 || serverWindow[i] == SW_SENT)
 			return 0; // This window is undone.
 	}
 
@@ -135,29 +193,40 @@ int Trace::finishedgPacket(gPacket * gpkt){
 void Trace::setLayout(qPacket * qpkt) {
 	layout->setLayout(qpkt);
 	// Set the correct offset on each data server.
+#ifdef DEBUG
+	printf("offset = %lld, window size = %ld, strip size = %ld.\n", offset, layout->getWindowSize(), layout->getServerStripeSize(0));
+	fflush(stdout);
+#endif
 	long jumps = offset / layout->getWindowSize();
-	long remainder = offset % layout->getWindowSize();
+	long remainder = offset % layout->getWindowSize(); // can be big
 	for(int i = 0; i < layout->getServerNum(); i ++){
-		dsoffsets[i] += jumps * layout->getServerShare(i);
-		if(remainder < layout->getServerShare(i)){
-			dsoffsets[i] += remainder;
-			remainder = 0;
-		}
-		else{
-			dsoffsets[i] += layout->getServerShare(i);
-			remainder -= layout->getServerShare(i);
+		dsoffsets[i] = jumps * layout->getServerStripeSize(i);
+		if(remainder != -1){
+			if(remainder <= layout->getServerStripeSize(i)){ // Starts from here
+				offset_start_server = i;
+				offset_start_position = remainder;
+				dsoffsets[i] += remainder;
+				remainder = -1;
+			}
+			else{
+				dsoffsets[i] += layout->getServerStripeSize(i);
+				remainder -= layout->getServerStripeSize(i);
+			}
 		}
 	}
-	// Set the correct first window.
+
+	// Set the first window.
+	openNewWindow();
+/*
 	long smalleroffset = offset % layout->getWindowSize();
 	long rest;
 	for(int i = 0; i < layout->getServerNum(); i ++){
-		if(layout->getServerShare(i) > 0 && smalleroffset >= layout->getServerShare(i)){
+		if(layout->getServerStripeSize(i) > 0 && smalleroffset >= layout->getServerStripeSize(i)){
 			serverWindow[i] = SW_NULL; // For the first window, it is closed.
-			smalleroffset -= layout->getServerShare(i);
+			smalleroffset -= layout->getServerStripeSize(i);
 		}
 		else{
-			rest = layout->getServerShare(i) - smalleroffset;
+			rest = layout->getServerStripeSize(i) - smalleroffset;
 			smalleroffset = 0;
 			if(rest > unProcessedSize){
 				serverWindow[i] = unProcessedSize;
@@ -169,6 +238,7 @@ void Trace::setLayout(qPacket * qpkt) {
 			}
 		}
 	}
+	*/
 }
 
 double Trace::getStarttime(){
@@ -180,14 +250,17 @@ double Trace::getFinishtime(){
 long long Trace::getOffset(){
 	return offset;
 }
-int Trace::getId(){
+int Trace::getID(){
 	return myId;
 }
-long Trace::getSize(){
-	return size;
+long Trace::getTotalSize(){
+	return totalSize;
 }
 int Trace::getRead(){
 	return read;
+}
+int Trace::getFileId(){
+	return fileid;
 }
 int Trace::getApp(){
 	return app;

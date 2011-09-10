@@ -22,7 +22,7 @@ void Mserver::initialize(){ // Change here to change data layout.
 	ms_proc_time = par("ms_proc_time").doubleValue();
 
 	parseLayoutDoc(par("layout_input_path").stringValue());
-	if(numApps == 0)
+	if(numFiles == 0)
 		fprintf(stderr, "ERROR Mserver: No application data layout is given.\n");
 }
 
@@ -40,16 +40,16 @@ void Mserver::handleMessage(cMessage *cmsg){
 }
 
 void Mserver::handleLayoutReq(qPacket *qpkt){
-	int app = qpkt->getApp();
+	int fileid = qpkt->getFileId();
 	int i;
-	for(i = 0; i < numApps; i ++){
-		if(layoutlist[i]->getAppID() == app){
+	for(i = 0; i < numFiles; i ++){
+		if(layoutlist[i]->getFileID() == fileid){
 			layoutlist[i]->setqPacket(qpkt);
 			break;
 		}
 	}
-	if(i == numApps){
-		fprintf(stderr,"ERROR Mserver: Layout of application ID %d is not defined in the layout file.\n", app);
+	if(i == numFiles){
+		fprintf(stderr,"ERROR Mserver: Layout of file ID %d is not defined in the layout file.\n", fileid);
 		deleteModule();
 	}
 	qpkt->setByteLength(300); // Assume schedule reply length is 300.
@@ -75,9 +75,9 @@ void Mserver::parseLayoutDoc(const char * fname){
 		return;
 	}
 	// Each line of the document is in this format:
-	// APP_ID [server_ID data_size] [server_ID data_szie] ...
+	// FILE_ID [server_ID data_size] [server_ID data_szie] ...
 	char line[500];
-	int app_index = 0;
+	int file_index = 0;
 	while(fgets(line,500,fp) != NULL){
 		Layout * layout = NULL;
 		int i = 0;
@@ -85,8 +85,8 @@ void Mserver::parseLayoutDoc(const char * fname){
 		long val = -1;
 		bool end = false; // True if it meets the end of line.
 		bool sep = false; // True if a separation mark is found.
-		enum position_type{app_id, server_id, server_share};
-		int position = app_id;
+		enum position_type{file_id, server_id, server_stripe_size};
+		int position = file_id;
 		while(!end){
 			if(line[i] == '\n' || line[i] == '\0'){
 				end = true;
@@ -115,10 +115,10 @@ void Mserver::parseLayoutDoc(const char * fname){
 			}
 
 			if(val != -1 && sep == true){
-				if(position == app_id){
-					printf("\nAPP: %ld   ",val);
-					if(val >= MAX_APP){
-						fprintf(stderr, "ERROR Mserver: Application ID %d in layout file out of range.\n", (int)val);
+				if(position == file_id){
+					printf("\nFILE: %ld   ",val);
+					if(val >= MAX_FILE){
+						fprintf(stderr, "ERROR Mserver: File ID %d in layout file out of range.\n", (int)val);
 						deleteModule();
 					}
 					layout = new Layout((int)val);
@@ -130,10 +130,10 @@ void Mserver::parseLayoutDoc(const char * fname){
 						deleteModule();
 					}
 					layout->setServerID(index, (int)val);
-					position = server_share;
+					position = server_stripe_size;
 				}else{
 					printf("%ld]  ",val);
-					layout->setServerShare(index, val);
+					layout->setServerStripeSize(index, val);
 					position = server_id;
 					index ++;
 				}
@@ -144,17 +144,17 @@ void Mserver::parseLayoutDoc(const char * fname){
 		if(layout != NULL){
 			layout->setServerNum(index);
 			layout->calculateWindowSize();
-			layoutlist[app_index] = layout;
-			app_index ++;
+			layoutlist[file_index] = layout;
+			file_index ++;
 		}
 	}
 	printf("\n");
 	fflush(stdout);
-	numApps = app_index;
+	numFiles = file_index;
 	fclose(fp);
 }
 Mserver::~Mserver(){
-	for(int i = 0; i < numApps; i ++){
+	for(int i = 0; i < numFiles; i ++){
 		delete layoutlist[i];
 	}
 }

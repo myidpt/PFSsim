@@ -16,14 +16,6 @@
 #ifndef SFQ_H_
 #define SFQ_H_
 
-// Weight of applications / clients
-// Weight bigger-> higher priority
-#define SET_WEIGHT do {\
-	for(int wi = 0; wi < 1; wi ++){\
-		weight[wi] = 1000;\
-	}\
-} while(0);
-
 #include "IQueue.h"
 using namespace std;
 
@@ -31,7 +23,7 @@ class SFQ : public IQueue{
 protected:
 	int totalClients;
 	struct Job{
-		gPacket * gpkt;
+		bPacket * pkt;
 		double stag; // The start tags for all applications
 		double ftag; // The finish tags for all applications
 	};
@@ -39,14 +31,13 @@ protected:
 	list<Job*> osQ;
 	double maxftags[MAX_APP]; // store the finish tags for each job.
 	double vtime; // virtual time
-
 public:
 	SFQ(int, int);
-	gPacket * dispatchNext();
-	void pushWaitQ(gPacket *);
+	bPacket * dispatchNext();
+	void pushWaitQ(bPacket *);
 	void pushOsQ(Job *);
-	gPacket * popOsQ(long id);
-	gPacket * queryJob(long id);
+	bPacket * popOsQ(long id);
+	bPacket * queryJob(long id);
 };
 
 #endif /* SFQ_H_ */

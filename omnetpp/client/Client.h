@@ -21,10 +21,8 @@
 #include <string.h>
 #include <omnetpp.h>
 
-#include "../General.h"
-#include "../trace/Trace.h"
-#include "packet/GPacket_m.h"
-#include "packet/QPacket_m.h"
+#include "General.h"
+#include "trace/Trace.h"
 
 
 class Client : public cSimpleModule{

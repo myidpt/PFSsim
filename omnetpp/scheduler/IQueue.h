@@ -25,24 +25,21 @@
 #include <list>
 
 #include <omnetpp.h>
-#include "packet/GPacket_m.h"
-#include "../General.h"
+#include "General.h"
 
 #define NOW SIMTIME_DBL(simTime())
 using namespace std;
 
 class IQueue {
-protected:
-	int degree;
 public:
+	int degree;
 	double weight[MAX_APP]; // Weight for every application
-
 	IQueue(int deg);
 	~IQueue();
-	virtual void pushWaitQ(gPacket *) = 0;
-	virtual gPacket * dispatchNext() = 0;
-	virtual gPacket * popOsQ(long id) = 0;
-	virtual gPacket * queryJob(long id) = 0;
+	virtual void pushWaitQ(bPacket *) = 0;
+	virtual bPacket * dispatchNext() = 0;
+	virtual bPacket * popOsQ(long id) = 0;
+	virtual bPacket * queryJob(long id) = 0;
 };
 
 #endif /* IQUEUE_H_ */
