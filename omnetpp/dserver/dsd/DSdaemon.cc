@@ -17,7 +17,7 @@
  * Currently the DSdaemon just adds up some processing delay to the incoming (from eth) packets.
  */
 
-#include "DSdaemon.h"
+#include "dserver/dsd/DSdaemon.h"
 
 Define_Module(DSdaemon);
 DSdaemon::DSdaemon() {
@@ -70,7 +70,8 @@ void DSdaemon::handleDataReq(gPacket * gpkt){
 }
 
 void DSdaemon::handleDataResp(gPacket * gpkt){
-	queue->popOsQ(gpkt->getId());
+	queue->popOsQ(gpkt->getID());
+	gpkt->setName("JOB_FIN");
 	gpkt->setKind(JOB_FIN);
 	if(finjob_proc_time != 0){ // Consider the delay on the data server delay.
 		scheduleAt((simtime_t)(SIMTIME_DBL(simTime()) + finjob_proc_time), gpkt);
@@ -83,7 +84,7 @@ void DSdaemon::handleDataResp(gPacket * gpkt){
 void DSdaemon::dispatchJobs(){
 	gPacket * jobtodispatch = NULL;
 	while(1){
-		jobtodispatch = queue->dispatchNext();
+		jobtodispatch = (gPacket *)queue->dispatchNext();
 		if(jobtodispatch != NULL)
 			sendToLFS(jobtodispatch);
 		else

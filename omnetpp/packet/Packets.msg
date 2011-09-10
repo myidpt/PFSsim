@@ -11,12 +11,51 @@
 // 
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see http://www.gnu.org/licenses/.
-// 
+//
 
-message gPacket extends cPacket
+message bPacket extends cPacket
 {
-    long id = 0; // ID of the packet.
-    
+//    @customize(true);
+    long ID = 0;
+    int app = 0;
+    int size = 0; // The number of bytes of the access.
+}
+
+message qPacket extends bPacket
+{
+    int fileId = -1;
+    int dsNum = 0;
+    int dsList[1024];
+    long dsStripeSizes[1024];
+}
+
+message sPacket extends bPacket
+{
+    double tags[256];
+    bool forward;
+}
+
+packet PageRequest extends bPacket
+{
+    int fileId;
+    long pageStart;
+    long pageEnd;
+    bool read;
+    bool DIRECT = false;
+    bool SYNC = false;
+    bool pending = false;
+}
+
+packet DiskRequest extends bPacket
+{
+    int fileId;
+    long blkStart;
+    long blkEnd;
+    bool read;
+}
+
+message gPacket extends bPacket
+{
     double risetime = 0; // The time the job is rised on the client.
     double submittime = 0; // The time the job is submitted from the client.
     double interceptiontime = 0; // The time the job is intercepted by the scheduler.
@@ -28,10 +67,11 @@ message gPacket extends cPacket
     
     double qos_delay = 0; // The permitted delay of this job.
     
+    int fileId = 0; // The file id of this access.
     long highoffset = 0; // The higher range of the offset.
     long lowoffset = 0; // The offset of the access.
-    int size = 0; // The number of bytes of the access.
     int read = 0; // write for 0 and read for 1.
     int decision = -1; // The data server no. that the job to be sent.
-    int app = 0; // Application No. for this packet.
+    
+    long aggregateSize = 0; // The aggregate size of the total request.
 }

@@ -15,8 +15,8 @@
 
 #ifndef DISK_H_
 #define DISK_H_
-#include "../General.h"
-#include "../scheduler/FIFO.h"
+#include "General.h"
+#include "scheduler/FIFO.h"
 
 class Disk : public cSimpleModule{
 protected:
@@ -31,14 +31,14 @@ protected:
 	struct syncjob_type{
 		long id;
 		double time;
-		long off;
+		long off; // block number.
 		int len;
 		int read; // Read 1 / write 0
 	} * syncNojob, *syncEnd, *syncJob;
 
 	struct syncjobreply_type{
 		double time; // the time of next event / the finish time for job with fid in disksim.
-		long fid; // If one job is finished, the ID of the finished job. Otherwise, -1;
+		long id; // If one job is finished, the ID of the finished job. Otherwise, -1;
 	} * syncReply;
 
 	static int idInit;
@@ -47,13 +47,14 @@ protected:
 
 public:
 	Disk();
+	int getID();
 	void initialize();
 	int sock_init(int portno);
 	void handleMessage(cMessage *);
-	void handleDataReq(gPacket *);
+	void handleDataReq(DiskRequest *);
 	void handleDisksimSync();
 	int dispatchJobs();
-	void sendSafe(gPacket *);
+	void sendSafe(DiskRequest *);
 	void finish();
 	virtual ~Disk();
 };

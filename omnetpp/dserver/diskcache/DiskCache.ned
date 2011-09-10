@@ -13,16 +13,19 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-package dserver;
+package dserver.diskcache;
 
-simple DSdaemon
-{
+//
+// TODO auto-generated module
+//
+simple DiskCache{
     parameters:
-        @display("i=device/device");
-        double newjob_proc_time;
-        double finjob_proc_time;
-        int degree;
+        int total_pages;
+        double cache_r_speed; // The time cost of reading a page in cache.
+        double cache_w_speed; // The time cost of writing a page in cache.
+        double dirty_ratio;
+        double dirty_background_ratio;
+        @display("i=device/memory");
     gates:
-        inout eth;
         inout lfs;
 }

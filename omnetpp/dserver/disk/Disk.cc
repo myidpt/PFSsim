@@ -14,7 +14,7 @@
 //
 
 // The Disk module has to communicate with the Disksim process through TCP.
-#include "Disk.h"
+#include "dserver/disk/Disk.h"
 
 Define_Module(Disk);
 
@@ -55,13 +55,13 @@ int Disk::sock_init(int portno){
 	server = gethostbyname("localhost");
 
 	if (server == NULL) {
-		fprintf(stderr,"ERROR, no such host\n");
+		fprintf(stderr,"[ERROR] Disk: no such host.\n");
 		return -1;
 	}
 
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0) {
-		fprintf(stderr, "ERROR opening socket.\n");
+		fprintf(stderr, "[ERROR] Disk: opening socket.\n");
 		return -1;
 	}
 
@@ -71,10 +71,10 @@ int Disk::sock_init(int portno){
 	serv_addr.sin_port = htons(portno);
 
 	if (connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0){
-		fprintf(stderr, "ERROR connecting - ID: %d - Port: %d\n", getId(), portno);
+		fprintf(stderr, "[ERROR] Disk: connecting - ID: %d - Port: %d\n", getID(), portno);
 		return -1;
 	}
-	fprintf(stdout, "Connected! - ID: %d - Port: %d\n",getId(), portno);
+	fprintf(stdout, "Connected! - ID: %d - Port: %d\n",getID(), portno);
 	return 1;
 }
 
@@ -86,20 +86,20 @@ void Disk::handleMessage(cMessage *cmsg){
 	 */
 	switch(cmsg->getKind()){
 	case BLK_REQ:
-		handleDataReq((gPacket *)cmsg);
+		handleDataReq((DiskRequest *)cmsg);
 		break;
 	case SELF_EVENT: // self sync message.
 		delete cmsg;
 		handleDisksimSync();
 		break;
 	case BLK_RESP:
-		sendSafe((gPacket *)cmsg);
+		sendSafe((DiskRequest *)cmsg);
 		dispatchJobsAndSync();
 		break;
 	}
 }
 
-void Disk::handleDataReq(gPacket * datareq){
+void Disk::handleDataReq(DiskRequest * datareq){
 	queue->pushWaitQ(datareq);
 	dispatchJobsAndSync();
 }
@@ -116,7 +116,7 @@ void Disk::handleDisksimSync(){
 	syncNojob->time = SIMTIME_DBL(simTime()); // Transmit the current time of Dserver.
 	n = write(sockfd, syncNojob, sizeof(struct syncjob_type));
 	if(n < 0){
-		fprintf(stderr, "disksim_sync: write error.\n");
+		fprintf(stderr, "[ERROR] Disk: write error.\n");
 		fflush(stdout);
 		return;
 	}
@@ -129,30 +129,30 @@ void Disk::handleDisksimSync(){
 				break;
 		}
 		if(i == 10){
-			fprintf(stderr, "ERROR Disk: read from socket #%d timed out.\n", portno);
+			fprintf(stderr, "[ERROR] Disk: read from socket #%d timed out.\n", portno);
 			finish();
 			deleteModule();
 		}
 		if(n < 0){
-			fprintf(stderr, "disksim_sync: read error.\n");
+			fprintf(stderr, "[ERROR] Disk: read error.\n");
 			return;
 		}
 
-		if(syncReply->fid > 0){ // One job is finished
+		if(syncReply->id > 0){ // One job is finished
 			outstanding --;
-			gPacket * gpkt = NULL;
-			if((gpkt = queue->popOsQ(syncReply->fid)) == NULL){
-				fprintf(stderr, "disksim_sync: error when dequeue from outstanding queue.\n");
+			DiskRequest * req = NULL;
+			if((req = (DiskRequest *)queue->popOsQ(syncReply->id)) == NULL){
+				fprintf(stderr, "[ERROR] Disk: error when dequeue from outstanding queue. ID == #%ld.\n", syncReply->id);
 				return;
 			}
-			gpkt->setKind(BLK_RESP);
-			scheduleAt(syncReply->time, gpkt);
-//			sendResult(gpkt); // Send the result back to the client.
+			req->setKind(BLK_RESP);
+			scheduleAt(syncReply->time, req);
+//			sendResult(req); // Send the result back to the client.
 		}else if(syncReply->time > 0){ // We still have future events, schedule next SELF_EVENT packet.
-			gPacket * timemsg = new gPacket("Self-time-Dserver");
+			cMessage * timemsg = new cMessage("Self-time-Dserver");
 			timemsg->setKind(SELF_EVENT);
 			if(SIMTIME_DBL(simTime()) > syncReply->time + 0.000001){
-				fprintf(stderr, "%d - Strange: %lf > %lf\n", getId(), SIMTIME_DBL(simTime()), syncReply->time);
+				fprintf(stderr, "%d - Strange: %lf > %lf\n", getID(), SIMTIME_DBL(simTime()), syncReply->time);
 				syncReply->time = SIMTIME_DBL(simTime());
 			}
 			scheduleAt((simtime_t)(syncReply->time), timemsg);
@@ -164,28 +164,36 @@ void Disk::handleDisksimSync(){
 
 }
 
+#define MAX_BLK_BATCH 128
+
 int Disk::dispatchJobs(){
-	gPacket * gpkt;
+	DiskRequest * req;
 	int prev = outstanding;
 	while(1){
-		if((gpkt = queue->dispatchNext()) == NULL)
+		if((req = (DiskRequest *)queue->dispatchNext()) == NULL)
 			break;
 		outstanding ++;
-		syncJob->id = gpkt->getId();
+		syncJob->id = req->getID();
 		syncJob->time = SIMTIME_DBL(simTime());
-		syncJob->off = gpkt->getLowoffset() % 2000000; // Disksim doesn't support very big offset.
-		syncJob->len = gpkt->getSize();
+		syncJob->off = req->getBlkStart() % MAX_DISK_OFFSET;
+		syncJob->len = req->getBlkEnd() - req->getBlkStart();
+
+		if(syncJob->len > MAX_BLK_BATCH || syncJob->len <= 0 || syncJob->off > MAX_DISK_OFFSET || syncJob->off < 0){
+			fprintf(stderr, "[ERROR] Disk: Invalid block request to Disksim. [offset: %ld, length: %d]\n",
+					syncJob->off, syncJob->len);
+			return -1;
+		}
 
 		if (write(sockfd, syncJob, sizeof(struct syncjob_type)) < 0){
-			fprintf(stderr, "ERROR writing to socket\n");
+			fprintf(stderr, "[ERROR] Disk: writing to socket.\n");
 			return -1;
 		}
 	}
 	return (outstanding - prev);
 }
 
-void Disk::sendSafe(gPacket * gpkt){
-	send(gpkt, "g$o");
+void Disk::sendSafe(DiskRequest * req){
+	send(req, "g$o");
 }
 
 void Disk::finish(){
@@ -195,6 +203,10 @@ void Disk::finish(){
 	free(syncJob);
 	free(syncNojob);
 	free(syncEnd);
+}
+
+int Disk::getID(){
+	return myId;
 }
 
 Disk::~Disk() {

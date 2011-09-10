@@ -18,6 +18,11 @@
 //
 package dserver;
 
+import dserver.disk.Disk;
+import dserver.dsd.DSdaemon;
+import dserver.lfs.LocalFS;
+import dserver.diskcache.DiskCache;
+
 module Dserver
 {
     parameters:
@@ -29,6 +34,10 @@ module Dserver
         dsd: DSdaemon {
             parameters:
                 @display("p=137,52");
+        }
+        diskcache: DiskCache {
+
+            @display("p=271,155");
         }
         lfs: LocalFS {
             parameters:
@@ -42,4 +51,5 @@ module Dserver
         g <--> dsd.eth;
         dsd.lfs <--> lfs.dsd;
         lfs.disk <--> disk.g;
+        lfs.diskcache <--> diskcache.lfs;
 }

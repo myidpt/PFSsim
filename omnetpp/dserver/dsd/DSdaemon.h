@@ -15,9 +15,8 @@
 
 #ifndef DSDAEMON_H_
 #define DSDAEMON_H_
-#include "packet/GPacket_m.h"
-#include "../General.h"
-#include "../scheduler/FIFO.h"
+#include "General.h"
+#include "scheduler/FIFO.h"
 
 class DSdaemon : public cSimpleModule{
 protected:
@@ -28,11 +27,11 @@ protected:
 public:
 	DSdaemon();
 	void initialize();
-	virtual void handleMessage(cMessage * cmsg);
-	virtual void handleNewJob(gPacket *);
-	virtual void handleDataReq(gPacket *);
-	virtual void handleDataResp(gPacket *);
-	virtual void dispatchJobs();
+	void handleMessage(cMessage * cmsg);
+	void handleNewJob(gPacket *);
+	void handleDataReq(gPacket *);
+	void handleDataResp(gPacket *);
+	void dispatchJobs();
 	void sendToLFS(gPacket *);
 	void sendToEth(gPacket *);
 	virtual ~DSdaemon();

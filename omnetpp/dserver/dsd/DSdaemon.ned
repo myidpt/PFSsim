@@ -13,19 +13,16 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-package dserver;
+package dserver.dsd;
 
-simple LocalFS {
+simple DSdaemon
+{
     parameters:
-        int pagesize;
-        int totalpage;
+        @display("i=device/device");
+        double newjob_proc_time;
+        double finjob_proc_time;
         int degree;
-    	int app_data_range;
-        double cache_r_speed; // The time cost of reading a page in cache.
-        double cache_w_speed; // The time cost of writing a page in cache.
-        int max_pr_per_req; // The maximum number of disk access page-ranges a request will incur. Internal use.
-        @display("i=device/memory");
     gates:
-        inout dsd;
-        inout disk;
+        inout eth;
+        inout lfs;
 }

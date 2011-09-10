@@ -13,14 +13,16 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-package dserver;
+package dserver.lfs;
 
-simple Disk
-{
+simple LocalFS {
     parameters:
+        int page_size;
+        int blk_size;
         int degree;
-        int base_port;
-        @display("i=device/disk");
+        @display("i=device/cpu");
     gates:
-        inout g;
+        inout dsd;
+        inout disk;
+        inout diskcache;
 }
