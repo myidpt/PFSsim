@@ -143,8 +143,14 @@ int Client::readNextTrace(){
 		size = TRC_MAXSIZE;
 	}
 
-	if(sync == 1 || (time < SIMTIME_DBL(simTime()) + trc_proc_time))
+	if(sync == 0 && (time < SIMTIME_DBL(simTime()) + trc_proc_time)){
 		time = SIMTIME_DBL(simTime()) + trc_proc_time;
+	}else{ // sync == 1, time is the inter-arrival time
+		if(trc_proc_time > time)
+			time = SIMTIME_DBL(simTime()) + trc_proc_time;
+		else
+			time = SIMTIME_DBL(simTime()) + time;
+	}
 
 	trace = new Trace(trcId++, time, fileid, offset, size, read, appid, sync);
 	scheduleAt(time, traceSync);
@@ -169,6 +175,7 @@ int Client::scheduleNextPackets(){
 	gpkt->setID(pktId);
 	gpkt->setRisetime(SIMTIME_DBL(simTime()) + pkt_proc_time);
 	gpkt->setKind(SELF_EVENT);
+	gpkt->setClientID(myId);
 
 	pktId ++;
 	scheduleAt((simtime_t)(gpkt->getRisetime()), gpkt);
@@ -181,6 +188,7 @@ int Client::sendLayoutQuery(){
 	qpkt->setFileId(trace->getFileId());
 	qpkt->setKind(LAYOUT_REQ);
 	qpkt->setByteLength(100); // schedule query: assume Length 100.
+	qpkt->setClientID(myId);
 	sendSafe(qpkt);
 	return 1;
 }
@@ -232,15 +240,20 @@ void Client::sendSafe(cMessage * cmsg){
 
 // General information
 void Client::trcStatistic(Trace * trc){
-	fprintf(rfp, "Trace #%d: %d %lld %ld {%lf %lf}\n",
+	fprintf(rfp, "%d %d %d %lld %ld %lf %lf\n",
 			trc->getID(),
 			trc->getFileId(),
+			trc->getRead(),
 			trc->getOffset(),
 			trc->getTotalSize(),
 			trc->getStarttime(),
-			trc->getFinishtime());
+			trc->getFinishtime() - trc->getStarttime());
 }
 
+void Client::pktStatistic(gPacket * gpkt){
+
+}
+/*
 // General information
 void Client::pktStatistic(gPacket * gpkt){
 	fprintf(rfp, "   Packet #%ld: %lld %d %d %d %d\n"
@@ -260,6 +273,7 @@ void Client::pktStatistic(gPacket * gpkt){
 			gpkt->getFinishtime(),
 			gpkt->getReturntime());
 }
+*/
 
 /*
 void Client::statistic(gPacket * gpkt){

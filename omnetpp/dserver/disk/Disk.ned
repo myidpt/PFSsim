@@ -19,7 +19,8 @@ simple Disk
 {
     parameters:
         int degree;
-        int base_port;
+        double disk_r_speed;
+        double disk_w_speed;
         @display("i=device/disk");
     gates:
         inout g;

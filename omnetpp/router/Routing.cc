@@ -17,6 +17,10 @@
 
 Define_Module(Routing);
 
+void Routing::initialize(){
+	numSchedulers = par("numDservers").longValue();
+}
+
 void Routing::handleMessage(cMessage *msg)
 {
 	switch(msg->getKind()){
@@ -24,7 +28,7 @@ void Routing::handleMessage(cMessage *msg)
 		send(msg, "msout");
 		break;
 	case LAYOUT_RESP:
-		send(msg, "cout", ((qPacket *)msg)->getID() / CID_OFFSET_IN_PID);
+		send(msg, "cout", ((qPacket *)msg)->getClientID());
 		break;
 	case JOB_REQ:
 		send(msg, "schout", ((gPacket *)msg)->getDecision());
@@ -36,8 +40,24 @@ void Routing::handleMessage(cMessage *msg)
 		send(msg, "schout", ((gPacket *)msg)->getDecision());
 		break;
 	case JOB_RESP:
-		send(msg, "cout", ((gPacket *)msg)->getID() / CID_OFFSET_IN_PID);
+		send(msg, "cout", ((gPacket *)msg)->getClientID());
+		break;
+	case PROP_SCH:
+		handleSPacketPropagation((sPacket *)msg);
 		break;
 	}
+}
+
+void Routing::handleSPacketPropagation(sPacket * spkt){
+	cGate * arrgate = spkt->getArrivalGate();
+	for(int i = 0; i < numSchedulers; i ++){
+		if(arrgate != gate("interschin", i)){
+			sPacket * tmp = new sPacket("PROP_SCH", PROP_SCH);
+			tmp->setApp(spkt->getApp());
+			tmp->setLength(spkt->getLength());
+			send(tmp, "interschout", i);
+		}
+	}
+	delete spkt;
 }
 

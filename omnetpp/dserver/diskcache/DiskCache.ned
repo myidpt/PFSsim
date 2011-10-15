@@ -25,6 +25,7 @@ simple DiskCache{
         double cache_w_speed; // The time cost of writing a page in cache.
         double dirty_ratio;
         double dirty_background_ratio;
+        int writeout_batch; // The number of pages to write back when the dirty_ratio is met.
         @display("i=device/memory");
     gates:
         inout lfs;

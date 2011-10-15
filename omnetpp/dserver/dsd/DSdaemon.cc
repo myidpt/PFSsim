@@ -27,7 +27,7 @@ void DSdaemon::initialize(){
 	degree = par("degree").longValue();
 	newjob_proc_time = par("newjob_proc_time").doubleValue();
 	finjob_proc_time = par("finjob_proc_time").doubleValue();
-	queue = new FIFO(degree);
+	queue = new FIFO(12345, degree);
 }
 
 void DSdaemon::handleMessage(cMessage * cmsg) {

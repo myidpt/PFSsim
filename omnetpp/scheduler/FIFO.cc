@@ -15,7 +15,7 @@
 
 #include "scheduler/FIFO.h"
 
-FIFO::FIFO(int deg):IQueue(deg) {
+FIFO::FIFO(int id, int deg):IQueue(id, deg) {
 }
 
 // Push one job to the waitQ.
@@ -73,4 +73,15 @@ bPacket * FIFO::queryJob(long id){
 		}
 	}
 	return ret;
+}
+
+sPacket * FIFO::propagateSPacket(){
+	fprintf(stderr, "[ERROR] FIFO: calling propagateSPacket method in FIFO is prohibited.\n");
+	fflush(stderr);
+	return NULL;
+}
+
+void FIFO::receiveSPacket(sPacket *){
+	fprintf(stderr, "[ERROR] FIFO: calling receiveSPacket method in FIFO is prohibited.\n");
+	fflush(stderr);
 }

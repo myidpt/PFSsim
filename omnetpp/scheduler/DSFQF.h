@@ -13,22 +13,20 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-package scheduler;
+#ifndef DSFQF_H_
+#define DSFQF_H_
 
-//
-// TODO auto-generated module
-//
-simple Scheduler
-{
-    parameters:
-        int algorithm;
-        int degree;
-        double newjob_proc_time;
-        double finjob_proc_time;
-        int numClients;
-        @display("i=device/server2");
-        bool sendInitialMessage = false;
-    gates:
-        inout g;
-        inout schg;
-}
+#include "SFQ.h"
+
+class DSFQF : public SFQ{
+protected:
+	bPacket * pktToPropagate;
+public:
+	DSFQF(int id, int deg, int totalc);
+	void receiveSPacket(sPacket * spkt);
+	bPacket * popOsQ(long id);
+	sPacket * propagateSPacket();
+	virtual ~DSFQF();
+};
+
+#endif /* DSFQF_H_ */

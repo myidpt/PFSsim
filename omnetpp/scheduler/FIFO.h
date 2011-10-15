@@ -26,12 +26,14 @@ private:
 	list<bPacket *> waitQ;
 	list<bPacket *> osQ;
 public:
-	FIFO(int);
+	FIFO(int, int);
 	void pushWaitQ(bPacket *);
 	bPacket * dispatchNext();
 	bPacket * popOsQ(long id);
 	bPacket * popOsQ();
 	bPacket * queryJob(long id);
+	sPacket * propagateSPacket();
+	void receiveSPacket(sPacket *);
 };
 
 #endif /* FIFO_H_ */

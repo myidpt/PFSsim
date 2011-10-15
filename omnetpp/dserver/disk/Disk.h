@@ -21,9 +21,8 @@
 class Disk : public cSimpleModule{
 protected:
     int degree;
-    int base_port;
-
-	int sockfd;
+    double disk_r_speed;
+    double disk_w_speed;
 	int myId;
 	int portno;
 	int outstanding;
@@ -43,17 +42,14 @@ protected:
 
 	static int idInit;
 
-	void dispatchJobsAndSync();
-
 public:
 	Disk();
 	int getID();
 	void initialize();
-	int sock_init(int portno);
 	void handleMessage(cMessage *);
-	void handleDataReq(DiskRequest *);
-	void handleDisksimSync();
-	int dispatchJobs();
+	void handleBlockReq(DiskRequest *);
+	void handleBlockResp(DiskRequest *);
+	void dispatchJobs();
 	void sendSafe(DiskRequest *);
 	void finish();
 	virtual ~Disk();

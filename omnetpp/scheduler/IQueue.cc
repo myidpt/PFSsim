@@ -15,7 +15,8 @@
 
 #include "scheduler/IQueue.h"
 
-IQueue::IQueue(int deg){
+IQueue::IQueue(int id, int deg){
+	myID = id;
 	degree = deg;
 	srand((unsigned)time(0));
 }

@@ -31,13 +31,22 @@ protected:
 	list<Job*> osQ;
 	double maxftags[MAX_APP]; // store the finish tags for each job.
 	double vtime; // virtual time
+
+	static FILE * schfp;
+
 public:
-	SFQ(int, int);
-	bPacket * dispatchNext();
-	void pushWaitQ(bPacket *);
-	void pushOsQ(Job *);
-	bPacket * popOsQ(long id);
-	bPacket * queryJob(long id);
+	SFQ(int, int, int);
+	virtual bPacket * dispatchNext();
+	virtual void pushWaitQ(bPacket *);
+	virtual void pushOsQ(Job *);
+	virtual bPacket * popOsQ(long id);
+	virtual bPacket * queryJob(long id);
+	virtual sPacket * propagateSPacket();
+	virtual void receiveSPacket(sPacket *);
+
+	void printNJ(Job *);
+	void printDP(Job *);
+	void printFIN(Job *);
 };
 
 #endif /* SFQ_H_ */

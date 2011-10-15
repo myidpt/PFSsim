@@ -19,9 +19,16 @@
 
 #include "scheduler/FIFO.h"
 #include "scheduler/SFQ.h"
+#include "scheduler/DSFQF.h"
+#include "scheduler/DSFQA.h"
+#include "scheduler/DSFQD.h"
+#include "scheduler/SSFQ.h"
+#include "scheduler/SDSFQA.h"
 
 class Scheduler : public cSimpleModule{
 protected:
+	static int schedulerID;
+	int myID;
 	int algorithm;
 	int degree;
 	double newjob_proc_time;
@@ -32,10 +39,14 @@ public:
 	Scheduler();
 	void initialize();
 	void handleNewJob(gPacket *);
+	void handleJobDispatch(gPacket *);
 	void handleFinishedJob(gPacket *);
+	void handleJobResp(gPacket *);
 	void dispatchJobs();
-	void sendSafe(gPacket *);
 	void handleMessage(cMessage *);
+	void handleInterSchedulerPacket(sPacket *);
+	void sendSafe(gPacket *);
+	void propagateSPacket(sPacket *);
 	virtual ~Scheduler();
 };
 

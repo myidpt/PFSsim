@@ -16,11 +16,18 @@
 #define MAX_DS 64
 #define TRC_MAXSIZE 0x40000000 // According to PVFS 0x40000000, 1GB
 #define JOB_MAXSIZE 0xa00000 // According to PVFS 0xa00000, 10MB
-#define MAX_TIME 36000 // The time limit on the simulation.
+#define MAX_TIME 360000 // The time limit on the simulation.
 
 #define CID_OFFSET_IN_PID 10000 // The offset of the Client ID in the packet IDs.
+#define PID_OFFSET_IN_SUBPID 1000 // The offset of the packet ID in the sub packet IDs.
 #define LOWOFFSET_RANGE 0x800000 // offset = lowoffset + lowoffset_range * highoffset
-#define MAX_DISK_OFFSET 1000000 // Limit to 4 GB total size.
+#define MAX_DISK_OFFSET 100000000 // Limit to 400 GB total size.
+
+//#define MAX_SUBREQ_SIZE 65536 // 64KB
+#define MAX_SUBREQ_SIZE 131072 // 128KB
+//#define MAX_SUBREQ_SIZE 262144 // 256KB
+//#define MAX_SUBREQ_SIZE 524288 // 512KB
+
 
 
 // For messages types
@@ -39,6 +46,7 @@
 #define TRC_SYN		12
 #define PAGE_REQ	13
 #define PAGE_RESP	14
+#define PROP_SCH	15
 #define DISK_REQ	17
 #define DISK_RESP	18
 #define W_CACHE_JOB_DONE	19 // When the job is done by committing to the cache.
@@ -53,11 +61,17 @@
 #define PVFS_SYS_LAYOUT_RANDOM 3
 #define PVFS_SYS_LAYOUT_LIST 4
 
-#define FIFO_ALG 0
-#define SFQ_ALG 1
+#define FIFO_ALG	0
+#define SFQ_ALG		1
+#define DSFQA_ALG	2
+#define DSFQD_ALG	3
+#define DSFQF_ALG	4
+#define SSFQ_ALG	5
+#define SDSFQA_ALG	6
 
 //#define VERBOSE
 //#define DEBUG
-
+//#define SCH_DEBUG
+//#define SCH_PRINT
 
 #endif /* GENERAL_H_ */

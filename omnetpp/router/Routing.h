@@ -22,7 +22,10 @@
 class Routing : public cSimpleModule
 {
 protected:
+	int numSchedulers;
+	void initialize();
 	virtual void handleMessage(cMessage *msg);
+	void handleSPacketPropagation(sPacket * spkt);
 };
 
 #endif

@@ -21,15 +21,18 @@ package router;
 simple Routing
 {
     parameters:
+        int numDservers;
         @display("i=block/routing");
     gates:
         input cin[];
         input dsin[];
         input msin;
         input schin[];
+        input interschin[];
         
         output cout[];
         output dsout[];
         output msout;
         output schout[];
+        output interschout[];
 }

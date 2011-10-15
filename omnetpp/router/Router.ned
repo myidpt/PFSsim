@@ -23,30 +23,37 @@ module Router
         inout c[]; // The size is defined in pfs.ned.
         inout ds[];
         inout sch[];
+        inout intersch[];
         inout ms;
     submodules:
         routing: Routing {
             parameters:
-                @display("p=194,180");
+                @display("p=211,179");
             gates:
                 cin[sizeof(c)];
                 dsin[sizeof(ds)];
                 schin[sizeof(sch)];
+                interschin[sizeof(intersch)];
+                
                 cout[sizeof(c)];
                 dsout[sizeof(sch)];
                 schout[sizeof(sch)];
+                interschout[sizeof(intersch)];
         }
         cq[sizeof(c)]: Queue {
-            @display("p=194,59");
+            @display("p=211,58");
         }
         dsq[sizeof(ds)]: Queue {
-            @display("p=194,303");
+            @display("p=211,302");
         }
         schq[sizeof(sch)]: Queue {
-            @display("p=45,180");
+            @display("p=76,120");
+        }
+        interschq[sizeof(intersch)]: Queue {
+            @display("p=76,249");
         }
         msq: Queue {
-            @display("p=345,180");
+            @display("p=359,179");
         }
     connections:
         // clinet
@@ -60,10 +67,14 @@ module Router
             routing.dsout[i] --> dsq[i].in;
             routing.dsin[i] <-- dsq[i].out;
             ds[i] <--> dsq[i].line;
-            
+
             routing.schout[i] --> schq[i].in;
             routing.schin[i] <-- schq[i].out;
             sch[i] <--> schq[i].line;
+
+            routing.interschout[i] --> interschq[i].in;
+            routing.interschin[i] <-- interschq[i].out;
+            intersch[i] <--> interschq[i].line;
         }
         // metadata server
         routing.msout --> msq.in;

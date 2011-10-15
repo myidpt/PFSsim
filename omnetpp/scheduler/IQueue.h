@@ -18,10 +18,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <netdb.h>
 #include <list>
 
 #include <omnetpp.h>
@@ -32,14 +28,17 @@ using namespace std;
 
 class IQueue {
 public:
+	int myID;
 	int degree;
 	double weight[MAX_APP]; // Weight for every application
-	IQueue(int deg);
+	IQueue(int id, int deg);
 	~IQueue();
 	virtual void pushWaitQ(bPacket *) = 0;
 	virtual bPacket * dispatchNext() = 0;
 	virtual bPacket * popOsQ(long id) = 0;
 	virtual bPacket * queryJob(long id) = 0;
+	virtual sPacket * propagateSPacket() = 0;
+	virtual void receiveSPacket(sPacket *) = 0;
 };
 
 #endif /* IQUEUE_H_ */

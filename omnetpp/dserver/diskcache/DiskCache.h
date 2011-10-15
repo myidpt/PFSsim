@@ -33,10 +33,17 @@ public:
 		bool PG_dirty; // when the pages are dirty, and not written back.
 		bool PG_writeback; // when writing the pages from cache to disk.
 		bool PG_locked; // Only when writing to the pages on cache.
-		bool refered; // used by reclaim algorithm
+		bool PG_referenced; // used by reclaim algorithm
 		bool modified; // used by reclaim algorithm
 		struct pr_t * next;
 		struct pr_t * prev;
+
+		bool PG_lru; // set if the range of pages are in the LRU list.
+		struct pr_t * lru_next; // the next range of pages in the LRU list.
+		struct pr_t * lru_prev; // the previous range of pages in the LRU list.
+
+		struct pr_t * writeout_list; // The writeout pr list it triggers.
+
 		pr_t(int fid, long st, long e, bool dirty, struct pr_t * n, struct pr_t * p);
 		pr_t(pr_t * oldpr);
 		static bool attrcomp(pr_t* comp1, pr_t* comp2); // compare if two prs are the same.
@@ -78,7 +85,16 @@ protected:
 	long free_pages; // Number of free pages.
 	long dirty_pages; // Number of dirty pages.
 	double dirty_ratio;
+	long dirty_threshold; // dirty_ratio * total_pages
 	double dirty_background_ratio;
+	long dirty_background_threshold; // dirty_background_ratio * total_pages
+	int writeout_batch; // The number of pages to write back when the dirty_ratio is met.
+#define DEFAULT_PAGE_FREE_BATCH 32
+
+	struct pr_t * writeout_list; // The list of pr to be written out.
+
+	struct pr_t * lru_list; // A simplified LRU list. Only one doubly-linked FIFO queue. This points to the head of the list.
+	struct pr_t * lru_list_end; // The end of th LRU list, the one to be removed soon.
 
 	struct pr_t * active_list; // List of active pages.
 	struct pr_t * inactive_list; // List of inactive pages.
@@ -93,6 +109,8 @@ protected:
 	list<PageRequest *> * reqQ; // The queue of requests
 	map<PageRequest *, pr_t *> * prs; //  The page-ranges which record the status of all queued requests.
 	map<int, file_t *> * files; // list of file objects.
+	int fileIDs[MAX_FILE]; // Stores all the file IDs.
+	int num_files; // Number of files.
 
     double cache_r_speed;
     double cache_w_speed;
@@ -115,8 +133,21 @@ protected:
     void cacheAccessPreop(int fid, long start, long end, bool read, bool disk);
     int getAccessSize(int fid, long start, long end, bool read, bool incache);
 
-    void printCache(int fid); // For debug: print the cache information for a given file.
-    int walkCache_countMissing(int fid, pr_t * addp);
+    int printCache(int fid); // For debug: print the cache information for a given file.
+    int walkCache_countMissing(int fid, long start, long end);
+
+    pr_t * startWriteout(int fid, int n); // Continuously write out n pages.
+    bool pagetable_delete(pr_t * pr); // Delete a page range from the page table.
+
+    bool lru_delete(pr_t * pr); // Delete a page range from the lru list.
+    void lru_push(pr_t * pr); // Push a page range to the top of the lru list.
+    void lru_insert(pr_t * pr1, pr_t * pr2); // Insert pr1 before or after pr2, depending on the page ranges.
+    void lru_substitute(pr_t * pr1, pr_t * pr2); // substitute pr2 with pr1.
+    bool lru_free_pages(int num); // Reclaim a specified number of pages.
+    bool lru_free_pages(); // Reclaim a default number of pages: 32.
+    int printLRU();
+
+    bool checkListHealth(); // Check if the doubly linked list for files and LRU is good.
 
     void finish();
 };

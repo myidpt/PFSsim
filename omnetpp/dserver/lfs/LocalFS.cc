@@ -29,7 +29,7 @@ void LocalFS::initialize(){
 	page_size = par("page_size").longValue();
 	blk_size = par("blk_size").longValue();
     degree  = par("degree").longValue();
-	fileReqQ = new FIFO(degree);
+	fileReqQ = new FIFO(12345, degree);
 	diskIOs = new map<long, PageRequest *>();
 }
 
@@ -64,6 +64,7 @@ void LocalFS::handleNewFileReq(gPacket * req){
 	fflush(stdout);
 #endif
 	fileReqQ->pushWaitQ(req);
+
 	dispatchNextFileReq();
 }
 

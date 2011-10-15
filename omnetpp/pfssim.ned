@@ -33,7 +33,7 @@ network pfssim
         channel Channel extends ned.DatarateChannel
         {
             delay = 0.2 ms; // 100 microseconds
-            datarate = 2 Gbps; // 500 Gbps
+            datarate = 1 Gbps; // 500 Gbps
         }
         channel PChannel extends ned.DelayChannel
         {
@@ -57,7 +57,6 @@ network pfssim
 
         ms: Mserver {
             parameters:
-                numDservers = numDservers;
                 @display("p=353,146");
         }
         switch: Router {
@@ -67,6 +66,7 @@ network pfssim
                 c[numClients];
                 ds[numDservers];
                 sch[numDservers];
+                intersch[numDservers];
         }
     connections:
         // C-Router channels
@@ -78,8 +78,10 @@ network pfssim
         for i=0..numDservers-1 {
             switch.ds[i] <--> Channel <--> ds[i].g;
             switch.sch[i] <--> Channel <--> sch[i].g;
+            switch.intersch[i] <--> Channel <--> sch[i].schg;
         }
 
         // MS-Router channels
         ms.g <--> Channel <--> switch.ms;
+        
 }

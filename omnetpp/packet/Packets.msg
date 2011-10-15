@@ -19,6 +19,7 @@ message bPacket extends cPacket
     long ID = 0;
     int app = 0;
     int size = 0; // The number of bytes of the access.
+    int clientID = -1; // The ID of the sender client.
 }
 
 message qPacket extends bPacket
@@ -32,6 +33,8 @@ message qPacket extends bPacket
 message sPacket extends bPacket
 {
     double tags[256];
+    int application = 0;
+    int length = 0;
     bool forward;
 }
 
