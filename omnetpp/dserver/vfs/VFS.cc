@@ -18,24 +18,24 @@
  * and manages a cache module. It also direct the request to the Disk if there's a cache-miss.
  */
 
-#include "dserver/vfs/VirtualFS.h"
+#include "dserver/vfs/VFS.h"
 
-Define_Module(VirtualFS);
+Define_Module(VFS);
 
-VirtualFS::VirtualFS() {
+VFS::VFS() {
 }
 
-void VirtualFS::initialize(){
+void VFS::initialize(){
 	page_size = par("page_size").longValue();
 	degree = par("degree").longValue();
 	fileReqQ = new FIFO(12345, degree);
 	pageReqQ = new FIFO(12345, 1000); // We don't control the pageReqQ.
 }
 
-void VirtualFS::handleMessage(cMessage * cmsg){
+void VFS::handleMessage(cMessage * cmsg){
 	/*
 	 * 			   LFILE_REQ >   	         PAGE_REQ >
-	 *  DSdaemon <------------> VirtualFS <-------------> DiskCache
+	 *  DSdaemon <------------> VFS <-------------> DiskCache
 	 *            < LFILE_RESP              < PAGE_RESP
 	 */
 
@@ -54,23 +54,23 @@ void VirtualFS::handleMessage(cMessage * cmsg){
 	}
 }
 
-void VirtualFS::handleNewFileReq(gPacket * req){
+void VFS::handleNewFileReq(gPacket * req){
 #ifdef VFS_DEBUG
-	cout << "VirtualFS: {handleNewFileReq} ID[" << req->getID() << "], SubID[" << req->getSubID()
+	cout << "VFS: {handleNewFileReq} ID[" << req->getID() << "], SubID[" << req->getSubID()
 			<< "], offset[" << req->getLowoffset() << "], size[" << req->getSize() << "], read[" << req->getRead() << "]." << endl;
 	fflush(stdout);
 #endif
 	if(req->getSize() <= 0){
-		PrintError::print("VirtualFS", "gPacket size <= 0", req->getSize());
+		PrintError::print("VFS", "gPacket size <= 0", req->getSize());
 		return;
 	}
 	fileReqQ->pushWaitQ(req);
 	dispatchPageReqs();
 }
 
-void VirtualFS::handlePageResp(PageRequest * resp){
+void VFS::handlePageResp(PageRequest * resp){
 #ifdef VFS_DEBUG
-	cout << "VirtualFS: {handlePageResp} ID[" << resp->getID() << "], SubID[" << resp->getSubID() << "], startpage[" << resp->getPageStart()
+	cout << "VFS: {handlePageResp} ID[" << resp->getID() << "], SubID[" << resp->getSubID() << "], startpage[" << resp->getPageStart()
 			<< "], endpage[" << resp->getPageEnd() << "], read[" << resp->getRead() << "]." << endl;
 	fflush(stdout);
 #endif
@@ -98,7 +98,7 @@ void VirtualFS::handlePageResp(PageRequest * resp){
 			pagereq->setFileId(fileresp->getFileId());
 			pageReqQ->pushWaitQ(pagereq);
 #ifdef VFS_DEBUG
-			cout << "VirtualFS: {push pageReqQ} The original request. ID[" << pagereq->getID() << ", SubID[" << pagereq->getSubID() << "], pagestart["
+			cout << "VFS: {push pageReqQ} The original request. ID[" << pagereq->getID() << ", SubID[" << pagereq->getSubID() << "], pagestart["
 					<< pagereq->getPageStart() << "], pageend[" << pagereq->getPageEnd() << "], read[" << pagereq->getRead() << "]." << endl;
 			fflush(stdout);
 #endif
@@ -111,7 +111,7 @@ void VirtualFS::handlePageResp(PageRequest * resp){
 		fileresp->setName("LFILE_RESP");
 		fileresp->setKind(LFILE_RESP);
 #ifdef VFS_DEBUG
-		cout << "VirtualFS: {send back fileresp} The original request. ID[" << fileresp->getID() << "], SubID["
+		cout << "VFS: {send back fileresp} The original request. ID[" << fileresp->getID() << "], SubID["
 				<< fileresp->getSubID() << "], size[" << fileresp->getSize() << "]." << endl;
 		fflush(stdout);
 #endif
@@ -122,7 +122,7 @@ void VirtualFS::handlePageResp(PageRequest * resp){
 	dispatchPageReqs();
 }
 
-void VirtualFS::dispatchPageReqs(){
+void VFS::dispatchPageReqs(){
 	dispatchNextFileReq();
 	PageRequest * pgreq;
 	while(1){
@@ -136,7 +136,7 @@ void VirtualFS::dispatchPageReqs(){
 // If the request is a write, and it involves writing to A PORTION of a page, it should firstly conduct reads to these pages.
 // When these pages are read, the write request is issued.
 // Otherwise, it just issue the write to the target pages.
-void VirtualFS::dispatchNextFileReq(){
+void VFS::dispatchNextFileReq(){
 	gPacket * filereqpkt = (gPacket *)fileReqQ->dispatchNext();
 	if(filereqpkt == NULL) // Currently exceeds the degree.
 		return;
@@ -161,7 +161,7 @@ void VirtualFS::dispatchNextFileReq(){
 		r_for_w->setRead(true);
 		pageReqQ->pushWaitQ(r_for_w);
 #ifdef VFS_DEBUG
-		cout << "VirtualFS: {push pageReqQ} Beginning has skew, read the beginning block. ID[" << r_for_w->getID() << "], SubID[" << r_for_w->getSubID() <<
+		cout << "VFS: {push pageReqQ} Beginning has skew, read the beginning block. ID[" << r_for_w->getID() << "], SubID[" << r_for_w->getSubID() <<
 				"], pagestart[" << r_for_w->getPageStart() << "], pageend[" << r_for_w->getPageEnd() << "]." << endl;
 		fflush(stdout);
 #endif
@@ -183,7 +183,7 @@ void VirtualFS::dispatchNextFileReq(){
 			r_for_w2->setRead(true);
 			pageReqQ->pushWaitQ(r_for_w2);
 #ifdef VFS_DEBUG
-			cout << "VirtualFS: {push pageReqQ} End has skew, read the end block. ID[" << r_for_w2->getID() << "], SubID[" << r_for_w2->getSubID() <<
+			cout << "VFS: {push pageReqQ} End has skew, read the end block. ID[" << r_for_w2->getID() << "], SubID[" << r_for_w2->getSubID() <<
 					"], pagestart[" << r_for_w2->getPageStart() << "], pageend[" << r_for_w2->getPageEnd() << "]." << endl;
 			fflush(stdout);
 #endif
@@ -205,7 +205,7 @@ void VirtualFS::dispatchNextFileReq(){
 		pagereq->setFileId(filereqpkt->getFileId());
 		pageReqQ->pushWaitQ(pagereq);
 #ifdef VFS_DEBUG
-		cout << "VirtualFS: {push the orig pageReqQ} The original request. ID[" << pagereq->getID() << "], SubID[" << pagereq->getSubID() << "], pagestart["
+		cout << "VFS: {push the orig pageReqQ} The original request. ID[" << pagereq->getID() << "], SubID[" << pagereq->getSubID() << "], pagestart["
 				<< pagereq->getPageStart() << "], pageend[" << pagereq->getPageEnd() << "], read[" << pagereq->getRead() << "]." << endl;
 		fflush(stdout);
 #endif
@@ -213,27 +213,27 @@ void VirtualFS::dispatchNextFileReq(){
 	}
 }
 
-void VirtualFS::sendToDSD(gPacket * req){
+void VFS::sendToDSD(gPacket * req){
 	send(req, "dsd$o");
 }
 
-void VirtualFS::sendToDiskCache(PageRequest * req){
+void VFS::sendToDiskCache(PageRequest * req){
 #ifdef	VFS_DEBUG
-	printf("VirtualFS: {sendToDiskCache} ID[%ld], SubID[%ld], pagestart[%ld], pageend[%ld], read[%d].\n",
+	printf("VFS: {sendToDiskCache} ID[%ld], SubID[%ld], pagestart[%ld], pageend[%ld], read[%d].\n",
 			req->getID(), req->getSubID(), req->getPageStart(), req->getPageEnd(), req->getRead());
 	fflush(stdout);
 #endif
 	send(req, "diskcache$o");
 }
 
-void VirtualFS::finish(){
+void VFS::finish(){
 #ifdef VFS_DEBUG
-	cout << "VirtualFS - finish." << endl;
+	cout << "VFS - finish." << endl;
 	fflush(stdout);
 #endif
 	delete fileReqQ;
 	delete pageReqQ;
 }
 
-VirtualFS::~VirtualFS() {
+VFS::~VFS() {
 }

@@ -13,15 +13,15 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 //
 
-#ifndef VIRTUALFS_H_
-#define VIRTUALFS_H_
+#ifndef VFS_H_
+#define VFS_H_
 
 #include <sys/types.h>
 #include "General.h"
 #include "scheduler/FIFO.h"
 using namespace std;
 
-class VirtualFS : public cSimpleModule{
+class VFS : public cSimpleModule{
 protected:
     int degree;
     int page_size;
@@ -29,7 +29,7 @@ protected:
 	FIFO * fileReqQ;
 	FIFO * pageReqQ;
 public:
-	VirtualFS();
+	VFS();
 	void initialize();
 	inline void handleMessage(cMessage *);
 	inline void handleNewFileReq(gPacket *);
@@ -40,7 +40,7 @@ public:
 	inline void sendToDiskCache(PageRequest *);
 //	int getCachedSize(gPacket *, ICache::pr_t *);
 	void finish();
-	virtual ~VirtualFS();
+	virtual ~VFS();
 };
 
-#endif /* VIRTUALFS_H_ */
+#endif /* VFS_H_ */

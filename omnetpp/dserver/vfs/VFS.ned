@@ -15,7 +15,7 @@
 
 package dserver.vfs;
 
-simple VirtualFS {
+simple VFS {
     parameters:
         int page_size;
         int degree;

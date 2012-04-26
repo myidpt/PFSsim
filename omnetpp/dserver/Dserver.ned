@@ -21,7 +21,7 @@ package dserver;
 import dserver.disk.Disk;
 import dserver.dsd.DSD_M;
 import dserver.lfs.LFS_M;
-import dserver.vfs.VirtualFS;
+import dserver.vfs.VFS;
 import dserver.diskcache.DiskCache;
 
 module Dserver
@@ -40,7 +40,7 @@ module Dserver
 
             @display("p=229,194");
         }
-        vfs: VirtualFS {
+        vfs: VFS {
             parameters:
                 @display("p=137,123");
         }
