@@ -16,7 +16,7 @@
 #ifndef SSFQ_H_
 #define SSFQ_H_
 
-#include "SFQ.h"
+#include "scheduler/SFQ.h"
 using namespace std;
 
 class SSFQ : public SFQ{
@@ -30,6 +30,7 @@ public:
 	SSFQ(int, int, int);
 	virtual void pushWaitQ(bPacket *);
 	virtual bPacket * popOsQ(long id);
+	virtual ~SSFQ();
 };
 
 #endif /* SSFQ_H_ */

@@ -30,18 +30,30 @@ void Routing::handleMessage(cMessage *msg)
 	case LAYOUT_RESP:
 		send(msg, "cout", ((qPacket *)msg)->getClientID());
 		break;
-	case JOB_REQ:
-		send(msg, "schout", ((gPacket *)msg)->getDecision());
-		break;
+//	case JOB_REQ:
+//	case JOB_REQ_LAST:
+//		send(msg, "schout", ((gPacket *)msg)->getDsID());
+//		break;
 	case JOB_DISP:
-		send(msg, "dsout", ((gPacket *)msg)->getDecision());
+	case JOB_DISP_LAST:
+	case JOB_REQ:
+		if(strstr(msg->getArrivalGate()->getFullName(), "cin") != NULL)
+			send(msg, "schout", ((gPacket *)msg)->getDsID());
+		else if(strstr(msg->getArrivalGate()->getFullName(), "schin") != NULL)
+			send(msg, "dsout", ((gPacket *)msg)->getDsID());
 		break;
 	case JOB_FIN:
-		send(msg, "schout", ((gPacket *)msg)->getDecision());
-		break;
+	case JOB_FIN_LAST:
 	case JOB_RESP:
-		send(msg, "cout", ((gPacket *)msg)->getClientID());
+		if(strstr(msg->getArrivalGate()->getFullName(), "dsin") != NULL)
+			send(msg, "schout", ((gPacket *)msg)->getDsID());
+		else if(strstr(msg->getArrivalGate()->getFullName(), "schin") != NULL)
+			send(msg, "cout", ((gPacket *)msg)->getClientID());
 		break;
+//	case JOB_RESP:
+//	case JOB_RESP_LAST:
+//		send(msg, "cout", ((gPacket *)msg)->getClientID());
+//		break;
 	case PROP_SCH:
 		handleSPacketPropagation((sPacket *)msg);
 		break;

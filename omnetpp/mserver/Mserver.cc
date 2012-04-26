@@ -21,9 +21,13 @@ void Mserver::initialize(){ // Change here to change data layout.
 	numDservers = (int)par("numDservers").longValue();
 	ms_proc_time = par("ms_proc_time").doubleValue();
 
-	parseLayoutDoc(par("layout_input_path").stringValue());
-	if(numFiles == 0)
-		fprintf(stderr, "ERROR Mserver: No application data layout is given.\n");
+	if(readLayoutFile(par("layout_input_path").stringValue())){
+		printf("Metadata Server: Data layout file read successful.\n");
+		fflush(stdout);
+	}else{
+		PrintError::print("Mserver", "Data layout file read error.");
+		deleteModule();
+	}
 }
 
 void Mserver::handleMessage(cMessage *cmsg){
@@ -35,7 +39,7 @@ void Mserver::handleMessage(cMessage *cmsg){
 		sendSafe(cmsg);
 		break;
 	default:
-		fprintf(stderr, "ERROR Mserver: Unknown message type %d.\n", cmsg->getKind());
+		PrintError::print("Mserver", "Unknown message type.", cmsg->getKind());
 	}
 }
 
@@ -49,10 +53,10 @@ void Mserver::handleLayoutReq(qPacket *qpkt){
 		}
 	}
 	if(i == numFiles){
-		fprintf(stderr,"ERROR Mserver: Layout of file ID %d is not defined in the layout file.\n", fileid);
+		PrintError::print("Mserver", "Layout of this file ID is not defined in the layout file.", fileid);
 		deleteModule();
 	}
-	qpkt->setByteLength(300); // Assume schedule reply length is 300.
+	qpkt->setByteLength(METADATA_LENGTH); // Assume query reply length is METADATA_LENGTH.
 	qpkt->setKind(LAYOUT_RESP);
 	if(ms_proc_time != 0)
 		scheduleAt((simtime_t)(SIMTIME_DBL(simTime()) + ms_proc_time), qpkt);
@@ -68,11 +72,11 @@ void Mserver::sendSafe(cMessage * cmsg){
 		send(cmsg, "g$o");
 }
 
-void Mserver::parseLayoutDoc(const char * fname){
+int Mserver::readLayoutFile(const char * fname){
 	FILE * fp = NULL;
 	if((fp = fopen(fname, "r")) == NULL){
-		fprintf(stderr, "ERROR Mserver: Can not find layout document %s.", fname);
-		return;
+		PrintError::print("Mserver - parseLayoutFile", string("Can not find layout document")+fname);
+		return -1;
 	}
 	// Each line of the document is in this format:
 	// FILE_ID [server_ID data_size] [server_ID data_szie] ...
@@ -116,23 +120,22 @@ void Mserver::parseLayoutDoc(const char * fname){
 
 			if(val != -1 && sep == true){
 				if(position == file_id){
-					printf("\nFILE: %ld   ",val);
 					if(val >= MAX_FILE){
-						fprintf(stderr, "ERROR Mserver: File ID %d in layout file out of range.\n", (int)val);
-						deleteModule();
+						PrintError::print("Mserver - parseLayoutFile", "File ID in layout file out of range.", (int)val);
+						fclose(fp);
+						return -1;
 					}
 					layout = new Layout((int)val);
 					position = server_id;
 				}else if(position == server_id){
-					printf("[%ld ",val);
 					if(val >= numDservers){
-						fprintf(stderr, "ERROR Mserver: Data Server ID %d in layout file out of range.\n", (int)val);
-						deleteModule();
+						PrintError::print("Mserver - parseLayoutFile", "Data Server ID in layout file out of range.", (int)val);
+						fclose(fp);
+						return -1;
 					}
 					layout->setServerID(index, (int)val);
 					position = server_stripe_size;
 				}else{
-					printf("%ld]  ",val);
 					layout->setServerStripeSize(index, val);
 					position = server_id;
 					index ++;
@@ -148,13 +151,24 @@ void Mserver::parseLayoutDoc(const char * fname){
 			file_index ++;
 		}
 	}
-	printf("\n");
-	fflush(stdout);
 	numFiles = file_index;
-	fclose(fp);
-}
-Mserver::~Mserver(){
-	for(int i = 0; i < numFiles; i ++){
-		delete layoutlist[i];
+	if(numFiles == 0){
+		PrintError::print("Mserver - parseLayoutFile", "No application data layout is given.");
+		fclose(fp);
+		return -1;
 	}
+	fclose(fp);
+	return 1;
+}
+
+void Mserver::finish(){
+#ifdef MS_DEBUG
+	cout << "Mserver - finish." << endl;
+	fflush(stdout);
+#endif
+	for(int i = 0; i < numFiles; i ++)
+		delete layoutlist[i];
+}
+
+Mserver::~Mserver(){
 }

@@ -15,8 +15,8 @@
 
 #include "Layout.h"
 
-Layout::Layout(int id) {
-	fileId = id;
+Layout::Layout(int fid) {
+	fileId = fid;
 	setWindowSize(-1);
 	setServerNum(0);
 }
@@ -72,40 +72,40 @@ void Layout::setServerID(int index, int serverid){
 void Layout::setServerStripeSize(int index, long size){
 	serverStripeSizes[index] = size;
 }
-int Layout::getFileID(){
+int const Layout::getFileID(){
 	return fileId;
 }
-long Layout::getWindowSize(){
+long const Layout::getWindowSize(){
 	if(windowSize == -1)
 		calculateWindowSize();
 	return windowSize;
 }
-int Layout::getServerNum(){
+int const Layout::getServerNum(){
 	return serverNum;
 }
-int Layout::getServerID(int index){
+int const Layout::getServerID(int index){
 	// assert: index < serverNum
 	if(index >= serverNum)
 		return 0;
 	return serverList[index];
 }
-long Layout::getServerStripeSize(int index){
+long const Layout::getServerStripeSize(int index){
 	// assert: index < serverNum
 	if(index >= serverNum)
 		return 0;
 	return serverStripeSizes[index];
 }
-int Layout::findServerIndex(int id){
+int const Layout::findServerIndex(int id){
 	for(int i = 0; i < serverNum; i ++)
 		if(serverList[i] == id)
 			return i;
 	return -1;
 }
-void Layout::calculateWindowSize(){
+void const Layout::calculateWindowSize(){
 	windowSize = 0;
 	for(int i = 0; i < serverNum; i ++)
 		windowSize += serverStripeSizes[i];
-#ifdef DEBUG
+#ifdef LAYOUT_DEBUG
 	printf("calculateWindowSize == %ld, serverNum == %d, serverList[0] == %d, serverList[1] == %d,"
 			" serverStripeSizes[0] == %ld, [1] == %ld.\n",windowSize, serverNum, serverList[0], serverList[1],
 			serverStripeSizes[0], serverStripeSizes[1]);

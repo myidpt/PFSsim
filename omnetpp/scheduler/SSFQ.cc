@@ -35,14 +35,14 @@ void SSFQ::pushWaitQ(bPacket * pkt){
 		int i = 0;
 		while(size > 0){
 			gPacket * subreq = new gPacket("SUBREQ", pkt->getKind());
-			subreq->setID(pkt->getID() * PID_OFFSET_IN_SUBPID + i++);
+			subreq->setID(pkt->getID() * PID_OFFSET + i++);
 			subreq->setLowoffset(offset % LOWOFFSET_RANGE);
 			subreq->setHighoffset(offset / LOWOFFSET_RANGE);
 			subreq->setRead(gpkt->getRead());
 			subreq->setFileId(gpkt->getFileId());
 			subreq->setApp(gpkt->getApp());
 			subreq->setClientID(gpkt->getClientID());
-			subreq->setDecision(gpkt->getDecision());
+			subreq->setDsID(gpkt->getDsID());
 
 			if(size > MAX_SUBREQ_SIZE){
 				subreq->setSize(MAX_SUBREQ_SIZE);
@@ -56,7 +56,7 @@ void SSFQ::pushWaitQ(bPacket * pkt){
 		}
 	}else{
 		subReqNum->insert(std::pair<long, int>(pkt->getID(), -10)); // If the request is small in size, there's no sub-request.
-		pkt->setID(pkt->getID() * PID_OFFSET_IN_SUBPID);
+		pkt->setID(pkt->getID() * PID_OFFSET);
 		SFQ::pushWaitQ(pkt);
 	}
 }
@@ -66,10 +66,10 @@ bPacket * SSFQ::popOsQ(long subreqid){
 	bPacket * subreq = SFQ::popOsQ(subreqid);
 	if(subreq == NULL)
 		return NULL;
-	long reqid = subreqid / PID_OFFSET_IN_SUBPID;
+	long reqid = subreqid / PID_OFFSET;
 	map<long, int>::iterator it = subReqNum->find(reqid);
 	if(it == subReqNum->end()){ // Not found
-		fprintf(stderr, "[ERROR] SSFQ: popOsQ - can not find the request with ID = %ld.\n", reqid);
+		PrintError::print("SSFQ - popOsQ", "Can not find the request with this ID.", reqid);
 		return NULL;
 	}
 
@@ -80,7 +80,7 @@ bPacket * SSFQ::popOsQ(long subreqid){
 		map<long, bPacket *>::iterator it2 = reqList->find(reqid);
 		reqList->erase(it2);
 		ret = it2->second;
-		ret->setID(ret->getID() / PID_OFFSET_IN_SUBPID);
+		ret->setID(ret->getID() / PID_OFFSET);
 	}else{
 		delete subreq; // Delete the sub-request.
 		num --;
@@ -94,4 +94,7 @@ bPacket * SSFQ::popOsQ(long subreqid){
 	}
 
 	return ret;
+}
+
+SSFQ::~SSFQ(){
 }

@@ -18,7 +18,7 @@
 Define_Module(Queue);
 
 void Queue::initialize(){
-	queue.setName("queue");
+	queue = new cQueue("queue");
 	endTransmissionEvent = new cMessage("endTxEvent");
 }
 
@@ -32,9 +32,9 @@ void Queue::startTransmitting(cMessage *msg){
 void Queue::handleMessage(cMessage *msg){
 	if (msg==endTransmissionEvent){
 		// Transmission finished, we can start next one.
-		if (!queue.empty())
+		if (!queue->empty())
 		{
-			msg = (cMessage *) queue.pop();
+			msg = (cMessage *) queue->pop();
 			startTransmitting(msg);
 		}
 	}
@@ -44,7 +44,7 @@ void Queue::handleMessage(cMessage *msg){
 	else{// from the Routing module
 		if (endTransmissionEvent->isScheduled()){
 			// We are currently busy, so just queue up the packet.
-			queue.insert(msg);
+			queue->insert(msg);
 		}
 		else{
 			// We are idle, so we can start transmitting right away.
@@ -54,8 +54,11 @@ void Queue::handleMessage(cMessage *msg){
 }
 
 void Queue::finish(){
-	cancelAndDelete(endTransmissionEvent);
 }
 
 Queue::~Queue(){
+	if(queue != NULL)
+		delete queue;
+	if(endTransmissionEvent != NULL)
+		cancelAndDelete(endTransmissionEvent);
 }

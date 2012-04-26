@@ -13,16 +13,18 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 //
 
-message bPacket extends cPacket
+packet bPacket extends cPacket
 {
 //    @customize(true);
     long ID = 0;
+    long SubID = 0; // ID is not enough, currently SubID is only used on and below the VFS layer.
     int app = 0;
     int size = 0; // The number of bytes of the access.
     int clientID = -1; // The ID of the sender client.
+    int subReqNum = 0; // Record the number of subrequests. Only valid on a single module.
 }
 
-message qPacket extends bPacket
+packet qPacket extends bPacket
 {
     int fileId = -1;
     int dsNum = 0;
@@ -30,7 +32,7 @@ message qPacket extends bPacket
     long dsStripeSizes[1024];
 }
 
-message sPacket extends bPacket
+packet sPacket extends bPacket
 {
     double tags[256];
     int application = 0;
@@ -38,26 +40,7 @@ message sPacket extends bPacket
     bool forward;
 }
 
-packet PageRequest extends bPacket
-{
-    int fileId;
-    long pageStart;
-    long pageEnd;
-    bool read;
-    bool DIRECT = false;
-    bool SYNC = false;
-    bool pending = false;
-}
-
-packet DiskRequest extends bPacket
-{
-    int fileId;
-    long blkStart;
-    long blkEnd;
-    bool read;
-}
-
-message gPacket extends bPacket
+packet gPacket extends bPacket
 {
     double risetime = 0; // The time the job is rised on the client.
     double submittime = 0; // The time the job is submitted from the client.
@@ -74,7 +57,27 @@ message gPacket extends bPacket
     long highoffset = 0; // The higher range of the offset.
     long lowoffset = 0; // The offset of the access.
     int read = 0; // write for 0 and read for 1.
-    int decision = -1; // The data server no. that the job to be sent.
+    int meta = 0; // There are meta packets that does not incur actual data.
+    int dsID = -1; // The data server no. that the job to be sent.
     
     long aggregateSize = 0; // The aggregate size of the total request.
+}
+
+packet PageRequest extends bPacket
+{
+    int fileId;
+    long pageStart;
+    long pageEnd;
+    bool read;
+    bool DIRECT = false;
+    bool SYNC = false;
+    bool pending = false;
+}
+
+packet BlkRequest extends bPacket
+{
+    int fileId;
+    long blkStart;
+    long blkEnd;
+    bool read;
 }

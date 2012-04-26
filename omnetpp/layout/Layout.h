@@ -20,9 +20,9 @@
 
 /*  An example data layout in a window:
  *
- *  If the data layout parameters are set to be:
- *  windowSize = (256 + 512 + 128) * 1024
+ *  If the data is located on 3 servers, layout parameters are set to be:
  *  serverNum = 3
+ *  windowSize = {256 + 512 + 128}
  *  serverList[3] = {1, 3, 9}
  *  serverShares[3] = {256*1024, 512*1024, 128*1024}
  *
@@ -46,7 +46,7 @@ private:
 	long serverStripeSizes[MAX_DS]; // The size of data chunk assigned to the server.
 //	long serverShares[MAX_DS]; // The size of data in a window on each server.
 public:
-	Layout(int id);
+	Layout(int fid);
 	virtual ~Layout();
 	void setWindowSize(long size);
 	void setServerNum(int num);
@@ -56,13 +56,13 @@ public:
 	void setqPacket(qPacket *);
 	void setServerID(int index, int serverID);
 	void setServerStripeSize(int index, long share);
-	int getFileID();
-	long getWindowSize();
-	int getServerNum();
-	int getServerID(int index); // The input index is the index in the serverList or serverShares.
-	long getServerStripeSize(int index); // The input index is the index in the serverList or serverShares.
-	int findServerIndex(int id); // Find a server's index in the list given its ID.
-	void calculateWindowSize();
+	int const getFileID();
+	long const getWindowSize();
+	int const getServerNum();
+	int const getServerID(int index); // The input index is the index in the serverList or serverShares.
+	long const getServerStripeSize(int index); // The input index is the index in the serverList or serverShares.
+	int const findServerIndex(int id); // Find a server's index in the list given its ID.
+	void const calculateWindowSize();
 };
 
 #endif /* LAYOUT_H_ */

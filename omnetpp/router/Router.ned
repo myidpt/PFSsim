@@ -22,7 +22,7 @@ module Router
     gates:
         inout c[]; // The size is defined in pfs.ned.
         inout ds[];
-        inout sch[];
+        inout proxy[];
         inout intersch[];
         inout ms;
     submodules:
@@ -32,12 +32,12 @@ module Router
             gates:
                 cin[sizeof(c)];
                 dsin[sizeof(ds)];
-                schin[sizeof(sch)];
+                schin[sizeof(proxy)];
                 interschin[sizeof(intersch)];
                 
                 cout[sizeof(c)];
-                dsout[sizeof(sch)];
-                schout[sizeof(sch)];
+                dsout[sizeof(proxy)];
+                schout[sizeof(proxy)];
                 interschout[sizeof(intersch)];
         }
         cq[sizeof(c)]: Queue {
@@ -46,7 +46,7 @@ module Router
         dsq[sizeof(ds)]: Queue {
             @display("p=211,302");
         }
-        schq[sizeof(sch)]: Queue {
+        schq[sizeof(proxy)]: Queue {
             @display("p=76,120");
         }
         interschq[sizeof(intersch)]: Queue {
@@ -70,7 +70,7 @@ module Router
 
             routing.schout[i] --> schq[i].in;
             routing.schin[i] <-- schq[i].out;
-            sch[i] <--> schq[i].line;
+            proxy[i] <--> schq[i].line;
 
             routing.interschout[i] --> interschq[i].in;
             routing.interschin[i] <-- interschq[i].out;

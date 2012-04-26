@@ -21,14 +21,14 @@ using namespace std;
 
 class SFQ : public IQueue{
 protected:
-	int totalClients;
+	int totalapps;
 	struct Job{
 		bPacket * pkt;
 		double stag; // The start tags for all applications
 		double ftag; // The finish tags for all applications
 	};
-	list<Job*> waitQ[MAX_APP];
-	list<Job*> osQ;
+	list<Job*> * waitQ[MAX_APP];
+	list<Job*> * osQ;
 	double maxftags[MAX_APP]; // store the finish tags for each job.
 	double vtime; // virtual time
 
@@ -41,8 +41,12 @@ public:
 	virtual void pushOsQ(Job *);
 	virtual bPacket * popOsQ(long id);
 	virtual bPacket * queryJob(long id);
+	virtual bPacket * popOsQ(long id, long subid);
+	virtual bPacket * queryJob(long id, long subid);
+	virtual bool isEmpty();
 	virtual sPacket * propagateSPacket();
 	virtual void receiveSPacket(sPacket *);
+	virtual ~SFQ();
 
 	void printNJ(Job *);
 	void printDP(Job *);

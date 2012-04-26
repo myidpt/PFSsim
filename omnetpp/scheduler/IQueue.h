@@ -27,18 +27,22 @@
 using namespace std;
 
 class IQueue {
-public:
+protected:
 	int myID;
 	int degree;
 	double weight[MAX_APP]; // Weight for every application
+public:
 	IQueue(int id, int deg);
-	~IQueue();
 	virtual void pushWaitQ(bPacket *) = 0;
 	virtual bPacket * dispatchNext() = 0;
 	virtual bPacket * popOsQ(long id) = 0;
 	virtual bPacket * queryJob(long id) = 0;
+	virtual bPacket * popOsQ(long id, long subid) = 0;
+	virtual bPacket * queryJob(long id, long subid) = 0;
 	virtual sPacket * propagateSPacket() = 0;
 	virtual void receiveSPacket(sPacket *) = 0;
+	virtual bool isEmpty() = 0;
+	virtual ~IQueue();
 };
 
 #endif /* IQUEUE_H_ */

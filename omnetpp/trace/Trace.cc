@@ -46,7 +46,7 @@ Trace::Trace(int id, double t, int fid, long long off, long s, int r, int a, int
 		unProcessedSize = 0;
 	}
 */
-	layout = new Layout(fileid); // Initialize the layout object
+	layout = NULL; // Initialize the layout object
 }
 
 // Check if there are still unsent packets in the window.
@@ -58,11 +58,12 @@ gPacket * Trace::getNextgPacketFromWindow(){
 			gpkt->setLowoffset(dsoffsets[i] % LOWOFFSET_RANGE);
 			gpkt->setHighoffset(dsoffsets[i] / LOWOFFSET_RANGE);
 			gpkt->setSize(serverWindow[i]);
+			sentPktSize[i] = serverWindow[i];
 			gpkt->setRead(read);
 			gpkt->setFileId(fileid);
 			gpkt->setAggregateSize(aggregateSize);
 			gpkt->setApp(app);
-			gpkt->setDecision(layout->getServerID(i));
+			gpkt->setDsID(layout->getServerID(i));
 			serverWindow[i] = SW_SENT;
 			return gpkt;
 		}
@@ -88,6 +89,7 @@ bool Trace::openNewWindow(){
 	// Current window is all done (sending and receiving), and next window exists.
 	// Do next window.
 	// Set up the current total window size, i.e., aggregateSize.
+//	cout << "Before unProcessedSize: " << unProcessedSize << endl;
 	if(Max_ServerWindowTotalSize < unProcessedSize){
 		aggregateSize = Max_ServerWindowTotalSize;
 		unProcessedSize -= Max_ServerWindowTotalSize;
@@ -95,6 +97,7 @@ bool Trace::openNewWindow(){
 		aggregateSize = unProcessedSize;
 		unProcessedSize = 0;
 	}
+//	cout << "After unProcessedSize: " << unProcessedSize << endl;
 
 	// Set up the request size for each server.
 
@@ -141,12 +144,11 @@ bool Trace::openNewWindow(){
  */
 gPacket * Trace::nextgPacket() {
 	if (layout->getWindowSize() == 0){
-		fprintf(stderr, "[ERROR] Trace: the trace did not query the data layout.\n");
+		PrintError::print("Trace", "The trace did not query the data layout.");
 		return NULL;
 	}
 
-	gPacket * gpkt = getNextgPacketFromWindow();
-	// If the current window has not sent all the packets.
+	gPacket * gpkt = getNextgPacketFromWindow();	// If the current window has not sent all the packets.
 	if(gpkt != NULL){
 		return gpkt;
 	}
@@ -164,15 +166,15 @@ gPacket * Trace::nextgPacket() {
 // Return 2: This trace is all done.
 int Trace::finishedgPacket(gPacket * gpkt){
 	// Mark the slot in the window as done. 0 -> 1
-	int serverindex = layout->findServerIndex(gpkt->getDecision());
+	int serverindex = layout->findServerIndex(gpkt->getDsID());
 	if(serverindex < 0){
-		fprintf(stderr, "[ERROR] Trace: received wrong packet from server #%d\n", gpkt->getDecision());
+		PrintError::print("Trace", "received wrong packet from this server.", gpkt->getDsID());
 		return -1;
 	}
 
 	// Mark: Received one packet, and increment the offset of the data on that server.
 	serverWindow[serverindex] = SW_RECEIVED;
-	dsoffsets[serverindex] += gpkt->getSize();
+	dsoffsets[serverindex] += sentPktSize[serverindex];
 
 	// Check if all the slots in the window are done.
 	for(int i = 0; i < layout->getServerNum(); i ++){
@@ -190,17 +192,17 @@ int Trace::finishedgPacket(gPacket * gpkt){
 	return 1;
 }
 
-void Trace::setLayout(qPacket * qpkt) {
-	layout->setLayout(qpkt);
+void Trace::setLayout(Layout * lo) {
+	layout = lo;
 	// Set the correct offset on each data server.
-#ifdef DEBUG
-	printf("offset = %lld, window size = %ld, strip size = %ld.\n", offset, layout->getWindowSize(), layout->getServerStripeSize(0));
+#ifdef TRACE_DEBUG
+	printf("Trace: setLayout. offset = %lld, window size = %ld, strip size = %ld.\n", offset, layout->getWindowSize(), layout->getServerStripeSize(0));
 	fflush(stdout);
 #endif
-	long jumps = offset / layout->getWindowSize();
-	long remainder = offset % layout->getWindowSize(); // can be big
+	long long jumps = offset / layout->getWindowSize();
+	long long remainder = offset % layout->getWindowSize(); // can be big
 	for(int i = 0; i < layout->getServerNum(); i ++){
-		dsoffsets[i] = jumps * layout->getServerStripeSize(i);
+		dsoffsets[i] = jumps * (long long)(layout->getServerStripeSize(i));
 		if(remainder != -1){
 			if(remainder <= layout->getServerStripeSize(i)){ // Starts from here
 				offset_start_server = i;
@@ -209,8 +211,8 @@ void Trace::setLayout(qPacket * qpkt) {
 				remainder = -1;
 			}
 			else{
-				dsoffsets[i] += layout->getServerStripeSize(i);
-				remainder -= layout->getServerStripeSize(i);
+				dsoffsets[i] += (long long)(layout->getServerStripeSize(i));
+				remainder -= (long long)(layout->getServerStripeSize(i));
 			}
 		}
 	}
@@ -270,5 +272,4 @@ int Trace::getSync(){
 }
 
 Trace::~Trace() {
-	delete layout;
 }

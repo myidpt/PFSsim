@@ -16,23 +16,31 @@
 #include "scheduler/FIFO.h"
 
 FIFO::FIFO(int id, int deg):IQueue(id, deg) {
+	osQ = new list<bPacket *>();
+	waitQ = new list<bPacket *>();
 }
 
 // Push one job to the waitQ.
 void FIFO::pushWaitQ(bPacket * job){
-	waitQ.push_back(job);
+	waitQ->push_back(job);
 //	fprintf(sfile, "%lf\t%ld A\n", SIMTIME_DBL(simTime()), gpkt->getID());
 }
 
 // Pop one job from the front of the waitQ, and push it to the osQ. Return the job.
 bPacket * FIFO::dispatchNext(){
-	if(waitQ.empty())// No more jobs in queue.
+	if(waitQ->empty()){// No more jobs in queue.
+//		cerr << "id = " << myID << ", empty" << endl;
+//		fflush(stderr);
 		return NULL;
-	if((signed int)(osQ.size()) >= IQueue::degree) // If outstanding queue is bigger than the degree, stop dispatching more jobs.
+	}
+	if((signed int)(osQ->size()) >= degree){ // If outstanding queue is bigger than the degree, stop dispatching more jobs.
+//		cerr << "id = " << myID << "wait degree = " << waitQ->size() << ", os degree = " << osQ->size() << ", degree = " << degree << endl;
+//		fflush(stderr);
 		return NULL;
-	bPacket * ret = (bPacket *)waitQ.front();
-	waitQ.pop_front();
-	osQ.push_back(ret); // Push into osQ.
+	}
+	bPacket * ret = (bPacket *)waitQ->front();
+	waitQ->pop_front();
+	osQ->push_back(ret); // Push into osQ.
 //	fprintf(sfile, "%lf\t%ld D\n", SIMTIME_DBL(simTime()), ret->getID());
 	return ret;
 }
@@ -41,10 +49,26 @@ bPacket * FIFO::dispatchNext(){
 bPacket * FIFO::popOsQ(long id){
 	bPacket * ret = NULL;
 	list<bPacket *>::iterator i;
-	for(i=osQ.begin(); i != osQ.end(); i++){
+	for(i=osQ->begin(); i != osQ->end(); i++){
 		if((*i)->getID() == id){
 			ret = *i;
-			osQ.erase(i);
+			osQ->erase(i);
+			break;
+		}
+	}
+//	if(ret != NULL)
+//		fprintf(sfile, "%lf\t%ld F\n", SIMTIME_DBL(simTime()), ret->getID());
+	return ret;
+}
+
+// Pop the element with ID == id && SubID == subid from osQ, and return it.
+bPacket * FIFO::popOsQ(long id, long subid){
+	bPacket * ret = NULL;
+	list<bPacket *>::iterator i;
+	for(i=osQ->begin(); i != osQ->end(); i++){
+		if(((*i)->getID() == id) && ((*i)->getSubID() == subid)){
+			ret = *i;
+			osQ->erase(i);
 			break;
 		}
 	}
@@ -56,9 +80,9 @@ bPacket * FIFO::popOsQ(long id){
 // Pop the front element from osQ, and return it.
 bPacket * FIFO::popOsQ(){
 	bPacket * ret = NULL;
-	list<bPacket *>::iterator i = osQ.begin();
+	list<bPacket *>::iterator i = osQ->begin();
 	ret = *i;
-	osQ.erase(i);
+	osQ->erase(i);
 	return ret;
 }
 
@@ -66,7 +90,7 @@ bPacket * FIFO::popOsQ(){
 bPacket * FIFO::queryJob(long id){
 	bPacket * ret = NULL;
 	list<bPacket *>::iterator i;
-	for(i=osQ.begin(); i != osQ.end(); i++){
+	for(i=osQ->begin(); i != osQ->end(); i++){
 		if((*i)->getID() == id){
 			ret = *i;
 			break;
@@ -75,13 +99,39 @@ bPacket * FIFO::queryJob(long id){
 	return ret;
 }
 
+// Only return the job with ID == id && SubID == subid, do not mutate the queue.
+bPacket * FIFO::queryJob(long id, long subid){
+	bPacket * ret = NULL;
+	list<bPacket *>::iterator i;
+	for(i=osQ->begin(); i != osQ->end(); i++){
+		if(((*i)->getID() == id) && ((*i)->getSubID() == subid)){
+			ret = *i;
+			break;
+		}
+	}
+	return ret;
+}
+
+bool FIFO::isEmpty(){
+	return waitQ->empty() && osQ->empty();
+}
+
 sPacket * FIFO::propagateSPacket(){
-	fprintf(stderr, "[ERROR] FIFO: calling propagateSPacket method in FIFO is prohibited.\n");
-	fflush(stderr);
+	PrintError::print("FIFO", "calling propagateSPacket method in FIFO is prohibited.");
 	return NULL;
 }
 
 void FIFO::receiveSPacket(sPacket *){
-	fprintf(stderr, "[ERROR] FIFO: calling receiveSPacket method in FIFO is prohibited.\n");
-	fflush(stderr);
+	PrintError::print("FIFO", "calling receiveSPacket method in FIFO is prohibited.");
+}
+
+FIFO::~FIFO(){
+	if(waitQ != NULL){
+		waitQ->clear();
+		delete waitQ;
+	}
+	if(osQ != NULL){
+		osQ->clear();
+		delete osQ;
+	}
 }

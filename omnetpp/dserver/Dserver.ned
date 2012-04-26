@@ -19,8 +19,9 @@
 package dserver;
 
 import dserver.disk.Disk;
-import dserver.dsd.DSdaemon;
-import dserver.lfs.LocalFS;
+import dserver.dsd.DSD_M;
+import dserver.lfs.LFS_M;
+import dserver.vfs.VirtualFS;
 import dserver.diskcache.DiskCache;
 
 module Dserver
@@ -31,25 +32,30 @@ module Dserver
     gates:
         inout g;
     submodules:
-        dsd: DSdaemon {
+        dsd: DSD_M {
             parameters:
                 @display("p=137,52");
         }
         diskcache: DiskCache {
 
-            @display("p=271,155");
+            @display("p=229,194");
         }
-        lfs: LocalFS {
+        vfs: VirtualFS {
             parameters:
-                @display("p=136,155");
+                @display("p=137,123");
+        }
+        lfs: LFS_M {
+            parameters:
+                @display("p=137,259");
         }
         disk: Disk {
             parameters:
-                @display("p=137,258");
+                @display("p=137,333");
         }
     connections:
         g <--> dsd.eth;
-        dsd.lfs <--> lfs.dsd;
+        dsd.vfs <--> vfs.dsd;
         lfs.disk <--> disk.g;
         lfs.diskcache <--> diskcache.lfs;
+        vfs.diskcache <--> diskcache.vfs;
 }

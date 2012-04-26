@@ -18,39 +18,48 @@
 #include "General.h"
 #include "scheduler/FIFO.h"
 
+#define JUMPSIZECOUNT	22
+#define BLKSIZECOUNT	9 // 4K -> 1M
+//#define ZONECOUNT	8
+#define BASEBLKSIZE		4096
+
 class Disk : public cSimpleModule{
 protected:
+	long int diskSize; // In the unit of 4096B block.
+//	long int zoneSize; // The size of each zone.
     int degree;
-    double disk_r_speed;
-    double disk_w_speed;
-	int myId;
+	int myID;
 	int portno;
 	int outstanding;
 	FIFO * queue;
-	struct syncjob_type{
-		long id;
-		double time;
-		long off; // block number.
-		int len;
-		int read; // Read 1 / write 0
-	} * syncNojob, *syncEnd, *syncJob;
 
-	struct syncjobreply_type{
-		double time; // the time of next event / the finish time for job with fid in disksim.
-		long id; // If one job is finished, the ID of the finished job. Otherwise, -1;
-	} * syncReply;
+	long last_offset; // The offset of the last access (Consider 4096 as the unit).
+	long last_jump;
+	double last_access_time;
+	int seq_read_sofar; // Serves for the read-ahead functionality. RA is triggered if seq_read_sofar hits some point.
+	double return_zero_period; // If the idle time exceeds this bound, the disk head will be moved to other locations.
 
+	long jumpsizes[JUMPSIZECOUNT];
+	long blksizes[BLKSIZECOUNT];
+	double jumptime[2][BLKSIZECOUNT][JUMPSIZECOUNT]; // The first dimension is for read / write.
+	double seqtime[2][BLKSIZECOUNT];
+	long ra_size; // Read-ahead at the disk drive level. A simple algorithm is implemented. If ra_size < 0, that means ra is disabled.
+	int return_zero; // Return zero after every access.
 	static int idInit;
+
+	FILE * debugfp;
 
 public:
 	Disk();
 	int getID();
 	void initialize();
 	void handleMessage(cMessage *);
-	void handleBlockReq(DiskRequest *);
-	void handleBlockResp(DiskRequest *);
+	inline void handleBlockReq(BlkRequest *);
+	inline void handleBlockResp(BlkRequest *);
 	void dispatchJobs();
-	void sendSafe(DiskRequest *);
+	bool checkReadahead(BlkRequest *);
+	void sendSafe(BlkRequest *);
+	int readParmFile(const char *);
 	void finish();
 	virtual ~Disk();
 };

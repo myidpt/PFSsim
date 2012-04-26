@@ -28,13 +28,14 @@ private:
 	Layout * layoutlist[MAX_FILE];
 	int numFiles;
 	int numDservers;
-	virtual void parseLayoutDoc(const char * fname);
+	inline virtual int readLayoutFile(const char * fname);
 protected:
 	void initialize();
 	void handleMessage(cMessage *);
-	virtual void handleLayoutReq(qPacket *);
-	void handleqPacketReply(qPacket *);
-	void sendSafe(cMessage *);
+	inline virtual void handleLayoutReq(qPacket *);
+	inline void handleqPacketReply(qPacket *);
+	inline void sendSafe(cMessage *);
+	void finish();
 	virtual ~Mserver();
 };
 

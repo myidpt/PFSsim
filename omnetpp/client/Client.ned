@@ -25,6 +25,10 @@ simple Client
         double pkt_proc_time;
         string trc_path_prefix;
         string rslt_path_prefix;
+        double pkt_size_limit;
+        int small_io_size_threshold; // Considered to be small IO only when smaller than this limit.
+        int trcs_per_client; // Each app has an independent trace file.
+//        int degree;
         
         @display("i=device/pc2");
         bool sendInitialMessage = true;

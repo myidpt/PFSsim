@@ -33,9 +33,15 @@ private:
 
 	int myId;
 	long long offset; // The offset (start edge) of the entire data.
+
 	long long dsoffsets[MAX_DS]; // The offset of the data stored on each data server.
+
 	long serverWindow[MAX_DS]; // The window for the packets waiting for reply.
 	// >0: unsent (the quantity indicates the data amount) / SW_SENT / SW_RECEIVED / SW_NULL
+
+	long sentPktSize[MAX_DS];
+	 // You need to record the size of packets sent out, because the one comes back may not have the same size as you sent.
+
 	long totalSize; // The total size of the data.
 	long unProcessedSize; // The size of the data whose packets are still not put into the window.
 	long aggregateSize; // The aggregate size of the current window.
@@ -67,7 +73,7 @@ public:
 	Trace(int id, double stime, int fid, long long offset, long size, int read, int app, int sync);
 	gPacket * nextgPacket();
 	int finishedgPacket(gPacket *);
-	void setLayout(qPacket *);
+	void setLayout(Layout *);
 	double getStarttime();
 	double getFinishtime();
 	long long getOffset();

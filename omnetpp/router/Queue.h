@@ -21,12 +21,12 @@
 class Queue : public cSimpleModule
 {
 private:
-	cQueue queue;
-	cMessage *endTransmissionEvent;
+	cQueue * queue;
+	cMessage * endTransmissionEvent;
 protected:
     void initialize();
     virtual void handleMessage(cMessage *msg);
-    virtual void startTransmitting(cMessage *msg);
+    inline virtual void startTransmitting(cMessage *msg);
     void finish();
     virtual ~Queue();
 };
