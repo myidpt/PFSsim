@@ -45,4 +45,4 @@ for i in range(0, nclient):
 			sync = 1
 			time = 0
 		fid += 1
-    f.close()
+		f.close()
