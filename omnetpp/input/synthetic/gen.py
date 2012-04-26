@@ -9,6 +9,9 @@ if (len(sys.argv) != 6):
 read = int(sys.argv[5])
 if (read != 1 and read != 0):
   print "read value should be 1 or 0"
+  sys.exit()
+
+print "Generating input files. Number of clients:", sys.argv[1], " number of traces per client: ", sys.argv[2], " total size: ", sys.argv[3], " request size:", sys.argv[4], " read: ", sys.argv[5]
 
 nclient = int(sys.argv[1])
 ntrace = int(sys.argv[2])
