@@ -4,7 +4,7 @@ import sys
 random.seed()
 
 if (len(sys.argv) != 3):
-  print sys.argv[0], " <disk number> <file number>"
+  print sys.argv[0], " <number of disks> <number of files>"
   sys.exit()
 
 disknum=int(sys.argv[1])
