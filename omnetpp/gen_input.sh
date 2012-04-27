@@ -9,10 +9,32 @@ REQ_SIZE=1048576
 READ_FLAG=1
 STRIPE_SIZE=64K
 
+for WORD in "$@";
+do
+  case $WORD in
+    --python-prefix=*)
+      PYTHON_PREFIX=${WORD:16}
+      if [ -n "$PYTHON_PREFIX" ];
+      then
+        PYTHON_PREFIX=${PYTHON_PREFIX}/
+      fi
+      shift ;;
+    --help)
+      echo "Options:"
+      echo "--python-prefix= # Provide the path to the python binary directory."
+      echo "--help           # Print this information."
+      exit ;;
+    *)
+      echo "Unrecognized argument: " $WORD
+      exit ;;
+  esac
+done
+
+
 cd input/synthetic
-./gen.py $CLT_NUM $TRC_PER_CLT $FILE_SIZE $REQ_SIZE $READ_FLAG
+${PYTHON_PREFIX}python ./gen.py $CLT_NUM $TRC_PER_CLT $FILE_SIZE $REQ_SIZE $READ_FLAG
 cd ../..
 
 cd config/pfslayout/synthetic/even-dist
-./make-ed.py $SVR_NUM $FILE_NUM $STRIPE_SIZE
+${PYTHON_PREFIX}python ./make-ed.py $SVR_NUM $FILE_NUM $STRIPE_SIZE
 
