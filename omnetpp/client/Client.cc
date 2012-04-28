@@ -254,8 +254,8 @@ void Client::schedule_NextPackets(int appid){ // You should schedule all the pac
 		gpkt->setClientID(myID);
 
 #ifdef C_DEBUG
-	cout << "[" << SIMTIME_DBL(simTime()) << "] Client#" << myID << ": scheduleNextPacket. ID=" << gpkt->getID() << ", app=" << gpkt->getApp()
-			", offset=" << gpkt->getLowoffset() << ", size=" << gpkt->getSize() << ", dserver=" << gpkt->getDsID() << endl;
+	cout << "[" << SIMTIME_DBL(simTime()) << "] Client#" << myID << ": scheduleNextPacket. ID=" << gpkt->getID() << ", app=" << gpkt->getApp();
+	cout << ", lowoffset=" << gpkt->getLowoffset() << ", size=" << gpkt->getSize() << ", dserver=" << gpkt->getDsID() << endl;
 #endif
 
 		pktId += PID_OFFSET;

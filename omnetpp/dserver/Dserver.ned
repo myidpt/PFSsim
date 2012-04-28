@@ -38,7 +38,7 @@ module Dserver
         }
         diskcache: DiskCache {
 
-            @display("p=229,194");
+            @display("p=234,175");
         }
         vfs: VFS {
             parameters:
@@ -46,11 +46,11 @@ module Dserver
         }
         lfs: LFS_M {
             parameters:
-                @display("p=137,259");
+                @display("p=137,231");
         }
         disk: Disk {
             parameters:
-                @display("p=137,333");
+                @display("p=137,305");
         }
     connections:
         g <--> dsd.eth;
@@ -58,4 +58,5 @@ module Dserver
         lfs.disk <--> disk.g;
         lfs.diskcache <--> diskcache.lfs;
         vfs.diskcache <--> diskcache.vfs;
+        vfs.lfs <--> lfs.vfs;
 }

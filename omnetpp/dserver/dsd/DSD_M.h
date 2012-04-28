@@ -31,6 +31,7 @@ protected:
 	double read_metadata_proc_time; // This is exclusively for the processing of the write request(JOB_REQ) message.
 	double small_io_size_threshold;
 	IDSD * dsd;
+	int O_DIRECT;
 public:
 	DSD_M();
 	void initialize();

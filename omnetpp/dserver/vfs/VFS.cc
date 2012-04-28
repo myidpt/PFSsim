@@ -34,9 +34,12 @@ void VFS::initialize(){
 
 void VFS::handleMessage(cMessage * cmsg){
 	/*
-	 * 			   LFILE_REQ >   	         PAGE_REQ >
+	 * 			   LFILE_REQ >         PAGE_REQ >
 	 *  DSdaemon <------------> VFS <-------------> DiskCache
-	 *            < LFILE_RESP              < PAGE_RESP
+	 *            < LFILE_RESP   |    < PAGE_RESP
+	 *                  PAGE_REQ | PAGE_RESP
+	 *                           |
+	 *                          LFS
 	 */
 
 	switch(cmsg->getKind()){
@@ -44,11 +47,11 @@ void VFS::handleMessage(cMessage * cmsg){
 		if(((gPacket *)cmsg)->getClientID() > 1000){
 			PrintError::print("VFS", "ClientID > 1000", ((gPacket *)cmsg)->getClientID());
 			cerr << "Kind=" << ((gPacket *)cmsg)->getKind() << ", ID=" << ((gPacket *)cmsg)->getID() << endl;
-			while(1)sleep(5);
 		}
 		handleNewFileReq((gPacket *)cmsg);
 		break;
 	case PAGE_RESP:
+	case BLK_RESP:
 		handlePageResp((PageRequest *)cmsg);
 		break;
 	}
@@ -96,6 +99,7 @@ void VFS::handlePageResp(PageRequest * resp){
 			pagereq->setPageEnd(pageend);
 			pagereq->setRead(fileresp->getRead());
 			pagereq->setFileId(fileresp->getFileId());
+			pagereq->setODIRECT(fileresp->getODIRECT());
 			pageReqQ->pushWaitQ(pagereq);
 #ifdef VFS_DEBUG
 			cout << "VFS: {push pageReqQ} The original request. ID[" << pagereq->getID() << ", SubID[" << pagereq->getSubID() << "], pagestart["
@@ -129,7 +133,12 @@ void VFS::dispatchPageReqs(){
 		pgreq = (PageRequest *)pageReqQ->dispatchNext();
 		if(pgreq == NULL)
 			break;
-		sendToDiskCache(pgreq);
+		if(pgreq->getODIRECT()){
+			sendToLFS(pgreq);
+			pgreq->setKind(BLK_REQ);
+		}else{
+			sendToDiskCache(pgreq);
+		}
 	}
 }
 
@@ -159,6 +168,7 @@ void VFS::dispatchNextFileReq(){
 		r_for_w->setPageEnd(pagestart + 1);
 		r_for_w->setFileId(filereqpkt->getFileId());
 		r_for_w->setRead(true);
+		r_for_w->setODIRECT(filereqpkt->getODIRECT());
 		pageReqQ->pushWaitQ(r_for_w);
 #ifdef VFS_DEBUG
 		cout << "VFS: {push pageReqQ} Beginning has skew, read the beginning block. ID[" << r_for_w->getID() << "], SubID[" << r_for_w->getSubID() <<
@@ -181,6 +191,7 @@ void VFS::dispatchNextFileReq(){
 			r_for_w2->setPageEnd(pageend);
 			r_for_w2->setFileId(filereqpkt->getFileId());
 			r_for_w2->setRead(true);
+			r_for_w2->setODIRECT(filereqpkt->getODIRECT());
 			pageReqQ->pushWaitQ(r_for_w2);
 #ifdef VFS_DEBUG
 			cout << "VFS: {push pageReqQ} End has skew, read the end block. ID[" << r_for_w2->getID() << "], SubID[" << r_for_w2->getSubID() <<
@@ -203,6 +214,7 @@ void VFS::dispatchNextFileReq(){
 		pagereq->setPageEnd(pageend);
 		pagereq->setRead(filereqpkt->getRead());
 		pagereq->setFileId(filereqpkt->getFileId());
+		pagereq->setODIRECT(filereqpkt->getODIRECT());
 		pageReqQ->pushWaitQ(pagereq);
 #ifdef VFS_DEBUG
 		cout << "VFS: {push the orig pageReqQ} The original request. ID[" << pagereq->getID() << "], SubID[" << pagereq->getSubID() << "], pagestart["
@@ -224,6 +236,15 @@ void VFS::sendToDiskCache(PageRequest * req){
 	fflush(stdout);
 #endif
 	send(req, "diskcache$o");
+}
+
+void VFS::sendToLFS(PageRequest * req){
+#ifdef	VFS_DEBUG
+	printf("VFS: {sendToLFS} ID[%ld], SubID[%ld], pagestart[%ld], pageend[%ld], read[%d].\n",
+			req->getID(), req->getSubID(), req->getPageStart(), req->getPageEnd(), req->getRead());
+	fflush(stdout);
+#endif
+	send(req, "lfs$o");
 }
 
 void VFS::finish(){

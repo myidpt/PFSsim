@@ -23,4 +23,5 @@ simple VFS {
     gates:
         inout dsd;
         inout diskcache;
+        inout lfs;
 }

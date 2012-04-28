@@ -44,6 +44,7 @@ void DSD_M::initialize(){
 	write_metadata_proc_time = par("write_metadata_proc_time").doubleValue();
 	read_metadata_proc_time = par("read_metadata_proc_time").doubleValue();
     small_io_size_threshold = par("small_io_size_threshold").doubleValue();
+    O_DIRECT = par("O_DIRECT").longValue();
 
 	const char * pfsName = par("pfsname").stringValue();
 	int degree = par("degree").longValue();
@@ -60,15 +61,13 @@ void DSD_M::initialize(){
 
 void DSD_M::handleMessage(cMessage * cmsg) {
 	/*
-	 * 			        JOB_DISP >				 LFILE_REQ >
-	 *  router/switch <------------> DSD_M <--------------> VirtualFS
-	 *                  < JOB_FIN  			 	< LFILE_RESP
+	 * 			        JOB_DISP >			  LFILE_REQ >
+	 *  router/switch <------------> DSD_M <--------------> VFS
+	 *                  < JOB_FIN  	    	 < LFILE_RESP
 	 */
 	gPacket * gpkt = (gPacket *)cmsg;
 	if(((gPacket *)cmsg)->getClientID() > 1000){
 		PrintError::print("DSD_M", "ClientID > 1000", ((gPacket *)cmsg)->getClientID());
-		cerr << "!!!Kind=" << ((gPacket *)cmsg)->getKind() << ", ID=" << ((gPacket *)cmsg)->getID() << endl;
-		while(1)sleep(5);
 	}
 
 	switch(gpkt->getKind()){
@@ -181,6 +180,7 @@ void DSD_M::dispatch_VFSReqs(){
 #endif
 			jobtodispatch->setKind(LFILE_REQ);
 			jobtodispatch->setDispatchtime(SIMTIME_DBL(simTime()));
+			jobtodispatch->setODIRECT(O_DIRECT);
 			sendToVFS(jobtodispatch);
 		}else
 			break;

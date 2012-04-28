@@ -30,4 +30,5 @@ simple LFS_M {
     gates:
         inout diskcache;
         inout disk;
+        inout vfs;
 }

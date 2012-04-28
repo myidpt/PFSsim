@@ -36,6 +36,7 @@ public:
 	inline void dispatchNextDiskReq();
 	inline void sendToDisk(BlkRequest *);
 	inline void sendToDiskCache(PageRequest *);
+	inline void sendToVFS(PageRequest *);
 //	int getCachedSize(gPacket *, ICache::pr_t *);
 	void finish();
 	virtual ~LFS_M();

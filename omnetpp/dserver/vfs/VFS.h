@@ -38,6 +38,7 @@ public:
 	inline void dispatchNextFileReq();
 	inline void sendToDSD(gPacket *);
 	inline void sendToDiskCache(PageRequest *);
+	inline void sendToLFS(PageRequest *);
 //	int getCachedSize(gPacket *, ICache::pr_t *);
 	void finish();
 	virtual ~VFS();

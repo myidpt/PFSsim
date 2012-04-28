@@ -59,8 +59,8 @@ packet gPacket extends bPacket
     int read = 0; // write for 0 and read for 1.
     int meta = 0; // There are meta packets that does not incur actual data.
     int dsID = -1; // The data server no. that the job to be sent.
-    
     long aggregateSize = 0; // The aggregate size of the total request.
+    int ODIRECT = 0; // If set, the IO will not go through the disk cache.
 }
 
 packet PageRequest extends bPacket
@@ -72,6 +72,7 @@ packet PageRequest extends bPacket
     bool DIRECT = false;
     bool SYNC = false;
     bool pending = false;
+    int ODIRECT = 0; // If set, the IO will not go through the disk cache.
 }
 
 packet BlkRequest extends bPacket

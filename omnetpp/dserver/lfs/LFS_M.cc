@@ -60,11 +60,20 @@ void LFS_M::handleMessage(cMessage * cmsg){
 	case BLK_RESP:
 		handleBlkResp((BlkRequest *)cmsg);
 		break;
+	default:
+		char sentence[50];
+		sprintf(sentence, "Unknown message type %d.", cmsg->getKind());
+		PrintError::print("LFS_M", sentence);
+		break;
 	}
 }
 
 // Currently filesystem-specific data layout is not supported.
 void LFS_M::handlePageReq(PageRequest * req){
+#ifdef LFS_DEBUG
+		cout << "LFS_M: handlePageReq, ID[" << req->getID() << "], SubID[" << req->getSubID() << "]" << endl;
+		fflush(stdout);
+#endif
 	lfs->newReq(req);
 
 	if(req->getPageEnd() - req->getPageStart() <= 0){ // Check
@@ -87,7 +96,7 @@ void LFS_M::dispatchNextDiskReq(){
 		sendToDisk(diskreq);
 #ifdef LFS_DEBUG
 		cout << "LFS_M: LFS_M->Disk, ID[" << diskreq->getID() << "], SubID[" << diskreq->getSubID() <<
-				"blkstart[" << diskreq->getBlkStart() << "], blkend[" << diskreq->getBlkEnd() << "]." << endl;
+				"], blkstart[" << diskreq->getBlkStart() << "], blkend[" << diskreq->getBlkEnd() << "]." << endl;
 		fflush(stdout);
 #endif
 	}
@@ -95,21 +104,37 @@ void LFS_M::dispatchNextDiskReq(){
 
 void LFS_M::handleBlkResp(BlkRequest * blkresp){
 #ifdef LFS_DEBUG
-	cout << "LFS_M: handleblkResp. Received blk response #" << blkresp->getID() << endl;
+	cout << "LFS_M: handleblkResp. ID [" << blkresp->getID() << "], SubID[" << blkresp->getSubID() << "]" << endl;
 	fflush(stdout);
 #endif
 	PageRequest * pagereq = lfs->finishedReq(blkresp);
-	if(pagereq != NULL)
-		sendToDiskCache(pagereq);
+	if(pagereq != NULL){
+		if(pagereq->getODIRECT())
+			sendToVFS(pagereq);
+		else
+			sendToDiskCache(pagereq);
+	}
 	dispatchNextDiskReq();
 }
 
 void LFS_M::sendToDiskCache(PageRequest * req){
+#ifdef LFS_DEBUG
+		cout << "LFS_M: LFS_M->DiskCache, ID[" << req->getID() << "], SubID[" << req->getSubID() << "]." << endl;
+		fflush(stdout);
+#endif
 	send(req, "diskcache$o");
 }
 
 void LFS_M::sendToDisk(BlkRequest * req){
 	send(req, "disk$o");
+}
+
+void LFS_M::sendToVFS(PageRequest * req){
+#ifdef LFS_DEBUG
+		cout << "LFS_M: LFS_M->VFS, ID[" << req->getID() << "], SubID[" << req->getSubID() << "]." << endl;
+		fflush(stdout);
+#endif
+	send(req, "vfs$o");
 }
 
 void LFS_M::finish(){

@@ -28,6 +28,8 @@ simple DSD_M
         double max_subreq_size;
         int degree;
         string pfsname;
+        
+        int O_DIRECT; // If set, the IO will go directly to the LFS.
     gates:
         inout eth;
         inout vfs;
