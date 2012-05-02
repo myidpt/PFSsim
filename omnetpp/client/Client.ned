@@ -28,6 +28,7 @@ simple Client
         double pkt_size_limit;
         int small_io_size_threshold; // Considered to be small IO only when smaller than this limit.
         int trcs_per_client; // Each app has an independent trace file.
+        int max_window_size;
 //        int degree;
         
         @display("i=device/pc2");

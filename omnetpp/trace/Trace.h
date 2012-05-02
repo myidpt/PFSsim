@@ -29,7 +29,7 @@ private:
 	const static int SW_RECEIVED; // -1: For the server window: received the reply for this request.
 	const static int SW_NULL; // -2: This data server slot does not need to be accessed.
 
-	const static int Max_ServerWindowTotalSize; // 10MB. Max transmission size in a single request.
+	int maxWindowSize; // default 10MB. Max transmission size in a single request.
 
 	int myId;
 	long long offset; // The offset (start edge) of the entire data.
@@ -70,7 +70,7 @@ private:
 //	int dsList[MAX_DS_NUM]; // the list of DServers storing this requested data.
 
 public:
-	Trace(int id, double stime, int fid, long long offset, long size, int read, int app, int sync);
+	Trace(int id, double stime, int fid, long long offset, long size, int read, int app, int sync, int windowsize);
 	gPacket * nextgPacket();
 	int finishedgPacket(gPacket *);
 	void setLayout(Layout *);

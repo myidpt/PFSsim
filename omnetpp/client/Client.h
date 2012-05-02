@@ -46,6 +46,7 @@ private:
 	long pkt_size_limit;
 	int small_io_size_threshold; // The max size for small IO.
 	int trcs_per_c; // Number of traces to read from.
+	int maxWindowSize; // Max window size, for the traces.
 
 //	IQueue * reqQ;
 

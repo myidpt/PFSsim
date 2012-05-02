@@ -33,6 +33,7 @@ void Client::initialize(){
     pkt_size_limit = par("pkt_size_limit").doubleValue();
     small_io_size_threshold = par("small_io_size_threshold").doubleValue();
     trcs_per_c = par("trcs_per_client").longValue();
+    maxWindowSize = par("max_window_size").longValue();
     if(trcs_per_c > MAX_APP_PER_C){
 		PrintError::print("Client", myID, "Applications per client exceeds the maximum.", trcs_per_c);
 		deleteModule();
@@ -132,7 +133,6 @@ void Client::handleMessage(cMessage *cmsg){
 		break;
 	case JOB_FIN_LAST: // Job finished.
 	case JOB_RESP:
-//		cout << simTime() << ": JOB_FIN." << endl;
 		handle_FinishedPacket((gPacket *)cmsg);
 		break;
 	default:
@@ -228,7 +228,7 @@ int Client::read_NextTrace(int appid){
 #ifdef C_DEBUG
 	cout << "[" << SIMTIME_DBL(simTime()) << "] Client#" << myID << ": read_NextTrace. fid=" << fileid <<", offset=" << offset << ", size=" << size << endl;
 #endif
-	trace[appid] = new Trace(trcId[appid]++, time, fileid, offset, size, read, appid, sync);
+	trace[appid] = new Trace(trcId[appid]++, time, fileid, offset, size, read, appid, sync, maxWindowSize);
 	if(time > SIMTIME_DBL(simTime()))
 	    scheduleAt(time, traceSync[appid]);
 	else
@@ -262,13 +262,7 @@ void Client::schedule_NextPackets(int appid){ // You should schedule all the pac
 		if(pktId % CID_OFFSET >= CID_OFFSET - PID_OFFSET) // Due to the limited ID length, don't allow the trace ID to go too big.
 			pktId = CID_OFFSET * myID + PID_OFFSET * 1; // Restart it;
 
-//	reqQ->pushWaitQ(gpkt); // Push to reqQ.
-//	if(reqQ->dispatchNext() == NULL){ // It is the gpkt object. Push it to the osQ.
-//		return 0;
-//		PrintError::print("Client - schedule_NextPackets", "req->dispatchNext Error: didn't get the object just inserted.");
-//	}
-
-		gpkt->setRisetime(SIMTIME_DBL(simTime())+pkt_proc_time);
+		gpkt->setRisetime(SIMTIME_DBL(simTime()) + pkt_proc_time);
 		gpkt->setKind(SELF_JOB_REQ); // This lead to JOB_REQ to be sent.
 
 		if(pkt_proc_time != 0)

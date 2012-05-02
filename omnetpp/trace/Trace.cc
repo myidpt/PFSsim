@@ -18,9 +18,8 @@
 const int Trace::SW_NULL = 0;
 const int Trace::SW_RECEIVED = -1;
 const int Trace::SW_SENT = -2;
-const int Trace::Max_ServerWindowTotalSize = 10485760;
 
-Trace::Trace(int id, double t, int fid, long long off, long s, int r, int a, int s2):
+Trace::Trace(int id, double t, int fid, long long off, long s, int r, int a, int s2, int w):
 	cNamedObject("Trace"){
 	myId = id;
 	stime = t;
@@ -32,6 +31,8 @@ Trace::Trace(int id, double t, int fid, long long off, long s, int r, int a, int
 	read = r;
 	app = a;
 	sync = s2;
+	maxWindowSize = w;
+
 	for(int i = 0; i < MAX_DS; i ++){
 		serverWindow[i] = SW_NULL; // Mark as not related server.
 		dsoffsets[i] = 0; // Mark the data server offsets as 0.
@@ -90,9 +91,9 @@ bool Trace::openNewWindow(){
 	// Do next window.
 	// Set up the current total window size, i.e., aggregateSize.
 //	cout << "Before unProcessedSize: " << unProcessedSize << endl;
-	if(Max_ServerWindowTotalSize < unProcessedSize){
-		aggregateSize = Max_ServerWindowTotalSize;
-		unProcessedSize -= Max_ServerWindowTotalSize;
+	if(maxWindowSize < unProcessedSize){
+		aggregateSize = maxWindowSize;
+		unProcessedSize -= maxWindowSize;
 	}else{
 		aggregateSize = unProcessedSize;
 		unProcessedSize = 0;
