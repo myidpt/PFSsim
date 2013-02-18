@@ -19,7 +19,7 @@
 #include <math.h>
 #include <omnetpp.h>
 #include "General.h"
-#include "mserver/PFSMetadataServerStrategy.h"
+#include "PFSMetadataServerStrategy.h"
 #include "layout/Layout.h"
 #include "iostreamer/StreamersFactory.h"
 #include "iostreamer/istreamer/PFSFileInputStreamer.h"

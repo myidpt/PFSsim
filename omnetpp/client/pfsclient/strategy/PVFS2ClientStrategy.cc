@@ -1,26 +1,22 @@
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-// 
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see http://www.gnu.org/licenses/.
-// 
+/*
+ * Author: Yonggang Liu
+ * This class implements PFSClientStreategy. It realizes the PVFS2 Client side mechanisms.
+ */
 
 #include "PVFS2ClientStrategy.h"
 
+/*
+ * Initialize the first request ID, the packet size limit and the queue for AppRequests.
+ */
 PVFS2ClientStrategy::PVFS2ClientStrategy(int id) : myID(id){
 	requestID = CID_OFFSET * myID + RID_OFFSET * 1;
 	packet_size_limit = 10000000; // No limit by default.
 	appRequestQ = new FIFO(123, 100);
 }
 
+/*
+ * This is used to see what strategy you are using.
+ */
 string PVFS2ClientStrategy::getSignature() {
 	return "PVFS2";
 }
@@ -29,12 +25,18 @@ void PVFS2ClientStrategy::setPacketLengthLimit(int limit) {
 	packet_size_limit = limit;
 }
 
+/*
+ * When you get a new AppRequest:
+ * 1. Create a Trace object, and push it into the queue.
+ * 2. Check if the file this trace is accessing is with its information ready. If no, generate a LAYOUT_REQ
+ * packet; if yes, generate the data packets directly.
+ */
 vector<cPacket *> * PVFS2ClientStrategy::handleNewTrace(AppRequest * request) {
 #ifdef PFSCLIENT_DEBUG
 	cout << "PVFS2ClientStrategy-" << myID << "::handleNewTrace TraceID=" << request->getID()
 			<< " TraceFileID=" << request->getTraceFileID() << " PFSFileID=" << request->getFileID()
 			<< " APP=" << request->getApp() << " HO=" << request->getHighoffset()
-			<< " LO=" << request->getLowoffset() << endl;
+			<< " LO=" << request->getLowoffset() << " totalsize=" << request->getTotalSize() << endl;
 #endif
 	appRequestQ->pushWaitQ(request); // Insert the request to the queue.
 	appRequestQ->dispatchNext(); // Dispatch immediately.
@@ -47,7 +49,7 @@ vector<cPacket *> * PVFS2ClientStrategy::handleNewTrace(AppRequest * request) {
 
 	int fileID = request->getFileID();
 	PFSFile * pfsfile = pfsFiles.findPFSFile(fileID);
-	if (pfsfile == NULL) { // This means the file is never processed.
+	if (pfsfile == NULL) { // This means the file was never processed.
 		PVFS2File * file = new PVFS2File(fileID);
 		pfsFiles.addPFSFile(file);
 		qPacket * packet = file->createPFSFileMetadataPacket(requestID, myID, 0); // Create the layout query packet.
@@ -56,16 +58,20 @@ vector<cPacket *> * PVFS2ClientStrategy::handleNewTrace(AppRequest * request) {
 	}
 	else if (pfsfile->informationIsSet()) { // The information is ready.
 		trace->setLayout(pfsfile->getLayout()); // Set the new trace with the PFSFile layout information.
-		generateJobRequestDataPackets(fileID, packetlist);
+		generateDataPacketRequests(fileID, packetlist);
 	}
-	// Otherwise the query for information is sent, waiting for reply.
+	// Otherwise the query for information is sent, waiting for Response.
 
 	return packetlist;
 }
 
-vector<cPacket *> * PVFS2ClientStrategy::handleMetadataPacketReply(qPacket * packet) {
+/*
+ * Handle the LAYOUT_RESPONSE packet. Record the PFS file information, update the traces waiting for the information.
+ * Try to dispatch the data packet requests accessing this PFS file.
+ */
+vector<cPacket *> * PVFS2ClientStrategy::handleMetadataPacketResponse(qPacket * packet) {
 #ifdef PFSCLIENT_DEBUG
-	cout << "PVFS2ClientStrategy-" << myID << "::handleMetadataPacketReply packetID=" << packet->getID()
+	cout << "PVFS2ClientStrategy-" << myID << "::handleMetadataPacketResponse packetID=" << packet->getID()
 			<< " FileID=" << packet->getFileId() << endl;
 #endif
 	int fileID = packet->getFileId();
@@ -78,7 +84,7 @@ vector<cPacket *> * PVFS2ClientStrategy::handleMetadataPacketReply(qPacket * pac
 	delete packet;
 	Layout * layout = file->getLayout();
 
-	// Update the traces with the layout.
+	// Update the traces accessing the target PFS file.
 	vector<WindowBasedTrace *>::iterator it;
 	WindowBasedTrace * trace = NULL;
 	for (it = traces.begin(); it != traces.end(); it ++) {
@@ -89,36 +95,48 @@ vector<cPacket *> * PVFS2ClientStrategy::handleMetadataPacketReply(qPacket * pac
 	}
 
 	vector<cPacket *> * packetlist = new vector<cPacket *>();
-	generateJobRequestDataPackets(fileID, packetlist);
+	generateDataPacketRequests(fileID, packetlist);
 
 	return packetlist;
 }
 
-vector<cPacket *> * PVFS2ClientStrategy::handleDataPacketReply(gPacket * packet) {
+/*
+ * When a data packet response comes back:
+ * Distinguish if it is a READ or WRITE, and if it is the last data packet.
+ */
+vector<cPacket *> * PVFS2ClientStrategy::handleDataPacketResponse(gPacket * packet) {
 #ifdef PFSCLIENT_DEBUG
-	cout << "PVFS2ClientStrategy-" << myID << "::handleDataPacketReply packetID=" << packet->getID()
-			<< " FileID=" << packet->getFileId() << " " << MessageKind::getMessageKindString(gpkt->getKind()) << endl;
+	cout << "PVFS2ClientStrategy-" << myID << "::handleDataPacketResponse packetID=" << packet->getID()
+			<< " FileID=" << packet->getFileId() << " "
+			<< MessageKind::getMessageKindString(packet->getKind()) << endl;
 #endif
 	vector<cPacket *> * packetlist = new vector<cPacket *>();
 	if (packet->getKind() == PFS_R_DATA) {
-		delete packet;
+		// The data to be read has come back, we only care about the last packet. The packets in the middle are
+	    // deleted without other actions.
+	    delete packet;
 		return packetlist;
 	}
-	else if(packet->getKind() == PFS_W_RESP) { // This is the finish of the first round for a write.
-		processJobResponseDataPacket(packet, packetlist);
+	else if(packet->getKind() == PFS_W_RESP) {
+	    // This is the finish of the first round for a write.
+		processDataPacketResponse(packet, packetlist);
 	}
-	else if(packet->getKind() == PFS_R_DATA_LAST || packet->getKind() == PFS_W_FIN) { // This is the last packet of a read/write.
-		processJobFinishLastDataPacket(packet, packetlist);
+	else if(packet->getKind() == PFS_R_DATA_LAST || packet->getKind() == PFS_W_FIN) {
+	    // This is the last packet of a read/write.
+		processLastDataPacketResponse(packet, packetlist);
 	}
 	return packetlist;
 }
 
-
-/// <summary>
-/// Generate a JOB_REQ data packet to request for the data access. This is the first packet to send for a data access.
-/// Note that there may be multiple traces waiting to be started. So do a loop to check all.
-/// </summary>
-void PVFS2ClientStrategy::generateJobRequestDataPackets(int fileID, vector<cPacket *> * packetlist) {
+/*
+ * Generate a PFS_R_REQ/PFS_W_REQ data packet to request for the data access.
+ * This is the first packet to send for requesting a data access. This packet does not have data in it yet.
+ * Note that there may be multiple traces accessing the same PFS file waiting to be started. So do a loop to check all.
+ */
+void PVFS2ClientStrategy::generateDataPacketRequests(int fileID, vector<cPacket *> * packetlist) {
+#ifdef PFSCLIENT_DEBUG
+    cout << "PVFS2ClientStrategy::generateDataPacketRequests: fileID=" << fileID << endl;
+#endif
 	gPacket * gpkt = NULL;
 	WindowBasedTrace * trace = NULL;
 	vector<WindowBasedTrace *>::iterator it;
@@ -152,11 +170,11 @@ void PVFS2ClientStrategy::generateJobRequestDataPackets(int fileID, vector<cPack
 	}
 }
 
-/// <summary>
-/// Process a PFS_W_RESP data packet. This is the finish of the first round for a write.
-/// Note that this is in the middle of a WRITE. Have got the PFS_W_RESP. Start to transfer the real data.
-/// </summary>
-void PVFS2ClientStrategy::processJobResponseDataPacket(gPacket * gpkt, vector<cPacket *> * packetlist) {
+/*
+ * Process a PFS_W_RESP data packet. This is the response for a write request: PFS_W_REQ.
+ * Note that this means you can start to transfer the real data.
+ */
+void PVFS2ClientStrategy::processDataPacketResponse(gPacket * gpkt, vector<cPacket *> * packetlist) {
 	gpkt->setName("PFS_W_DATA");
 	long pktid = gpkt->getID() + 1;
 	long loff = gpkt->getLowoffset();
@@ -187,7 +205,12 @@ void PVFS2ClientStrategy::processJobResponseDataPacket(gPacket * gpkt, vector<cP
 	}
 }
 
-void PVFS2ClientStrategy::processJobFinishLastDataPacket(gPacket * packet, vector<cPacket *> * packetlist) {
+/*
+ * Process a PFS_R_DATA_LAST or PFS_W_FIN packet, which are the last packets for a access window.
+ * Because the requests are submitted and finished on a window basis, we may have multiple windows of requests to
+ * submit and finish for one trace. This method checks if there are remaining access windows to be done for the trace.
+ */
+void PVFS2ClientStrategy::processLastDataPacketResponse(gPacket * packet, vector<cPacket *> * packetlist) {
 	vector<WindowBasedTrace *>::iterator traceIt;
 	WindowBasedTrace * trace = NULL;
 	for (traceIt = traces.begin(); traceIt != traces.end(); traceIt ++) {
@@ -198,7 +221,7 @@ void PVFS2ClientStrategy::processJobFinishLastDataPacket(gPacket * packet, vecto
 	}
 
 	if (trace == NULL) {
-		PrintError::print("PVFS2ClientStrategy::processJobFinishLastDataPacket",
+		PrintError::print("PVFS2ClientStrategy::processLastDataPacketResponse",
 				"Trace is not found for the finished data packet with subID ", packet->getSubID());
 	}
 
@@ -212,18 +235,24 @@ void PVFS2ClientStrategy::processJobFinishLastDataPacket(gPacket * packet, vecto
 		AppRequest * retRequest = (AppRequest *)(appRequestQ->popOsQ(packet->getSubID()));
 
 		if (retRequest == NULL) {
-			PrintError::print("PVFS2ClientStrategy::processJobFinishLastDataPacket",
+			PrintError::print("PVFS2ClientStrategy::processLastDataPacketResponse",
 					"Cannot find the original AppRequest from the queue.");
 		}
 
 		retRequest->setKind(TRACE_RESP);
 		packetlist->push_back(retRequest);
 	} else if(ret == trace->MORE_TO_SEND){ // You have done the current window, schedule next packets.
-		generateJobRequestDataPackets(packet->getFileId(), packetlist); // set up future event
+		generateDataPacketRequests(packet->getFileId(), packetlist); // set up future event
+	} else if(ret == trace->INVALID){
+	    PrintError::print("PVFS2ClientStrategy::processLastDataPacketResponse",
+	            "The packet is invalid for the current window.");
 	}
 	delete packet;
 }
 
+/*
+ * Clean the memory.
+ */
 PVFS2ClientStrategy::~PVFS2ClientStrategy() {
 	if (appRequestQ != NULL){
 		delete appRequestQ;
