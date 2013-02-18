@@ -13,25 +13,20 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-package ned.proxy;
+#include "DSFQA.h"
 
-//
-// TODO auto-generated module
-//
-simple Proxy
-{
-    parameters:
-        int algorithm;
-        string alg_param;
-        double alg_prop_int;
-        double alg_prop_wl;
-        int degree;
-        double newjob_proc_time;
-        double finjob_proc_time;
-        int numApps;
-        @display("i=device/server2");
-        bool sendInitialMessage = false;
-    gates:
-        inout g;
-        inout schg;
+DSFQA::DSFQA(int id, int deg, int totalapp, const char * alg_param) : DSFQ(id, deg, totalapp, alg_param) {
+}
+
+void DSFQA::receiveSPacket(sPacket * spkt){
+	DSFQ::receiveSPacket_InsertBack(spkt);
+}
+
+void DSFQA::pushWaitQ(bPacket * pkt){
+	DSFQ::pushWaitQ(pkt);
+	pktToPropagate->setLengths(pkt->getApp(), pktToPropagate->getLengths(pkt->getApp()) + pkt->getSize());
+	pktToPropagate->setSrc(myID); // Set activate
+}
+
+DSFQA::~DSFQA() {
 }

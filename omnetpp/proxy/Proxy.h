@@ -21,11 +21,6 @@
 #include "scheduler/SFQ.h"
 #include "scheduler/SSFQ.h"
 #include "scheduler/DSFQA.h"
-#include "scheduler/DSFQD.h"
-#include "scheduler/DSFQF.h"
-#include "scheduler/DSFQALB.h"
-#include "scheduler/DSFQATB.h"
-#include "scheduler/SFQRC.h"
 
 class Proxy : public cSimpleModule{
 protected:

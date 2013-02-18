@@ -16,7 +16,7 @@
 //
 // TODO auto-generated module
 //
-package dataserver;
+package ned.dataserver;
 
 module Dserver
 {

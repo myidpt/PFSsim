@@ -17,11 +17,13 @@
 // Two instances (tic and toc) of Txc connected.
 //
 // DatarateChannel
-import client.Client;
-import dataserver.Dserver;
-import metadataserver.MetadataServer;
-import router.Router;
-import proxy.Proxy;
+import ned.client.Client;
+import ned.dataserver.Dserver;
+import ned.metadataserver.MetadataServer;
+import ned.router.Router;
+import ned.proxy.Proxy;
+
+package ned;
 
 network pfssim_1
 {

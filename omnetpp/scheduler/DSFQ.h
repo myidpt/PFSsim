@@ -13,25 +13,20 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-package ned.proxy;
+#ifndef DSFQ_H_
+#define DSFQ_H_
 
-//
-// TODO auto-generated module
-//
-simple Proxy
-{
-    parameters:
-        int algorithm;
-        string alg_param;
-        double alg_prop_int;
-        double alg_prop_wl;
-        int degree;
-        double newjob_proc_time;
-        double finjob_proc_time;
-        int numApps;
-        @display("i=device/server2");
-        bool sendInitialMessage = false;
-    gates:
-        inout g;
-        inout schg;
-}
+#include "SFQ.h"
+
+class DSFQ : public SFQ{
+protected:
+	sPacket * pktToPropagate;
+public:
+	DSFQ(int, int, int, const char *);
+	void receiveSPacket_InsertBack(sPacket *);
+	void receiveSPacket_InsertFront(sPacket *);
+	virtual sPacket * propagateSPacket();
+	virtual ~DSFQ();
+};
+
+#endif /* DSFQ_H_ */

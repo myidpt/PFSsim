@@ -16,7 +16,7 @@
 //
 // TODO auto-generated module
 //
-package client;
+package ned.client;
 
 simple PFSClient
 {

@@ -50,7 +50,8 @@ void Proxy::initialize(){
 		cout << "DSFQA(" << degree << ")";
 		queue = new DSFQA(myID, degree, numapps, alg_param);
 		break;
-	case DSFQD_ALG:
+	/*
+  case DSFQD_ALG:
 		cout << "DSFQD(" << degree << ")";
 		queue = new DSFQD(myID, degree, numapps, alg_param);
 		break;
@@ -73,7 +74,8 @@ void Proxy::initialize(){
         cout << "SFQRC(" << degree << ")";
         queue = new SFQRC(myID, degree, numapps, alg_param);
         break;
-	default:
+	*/
+  default:
 		PrintError::print("Proxy", "Undefined algorithm.");
 		deleteModule();
 		break;

@@ -1,21 +1,25 @@
 import random
 import sys
 
+blocksize = 4096
+
 random.seed()
 
-if (len(sys.argv) != 5):
-  print sys.argv[0], " <number of disks> <number of files> <data file size> <extent size>"
+if (len(sys.argv) != 4):
+  print sys.argv[0], " <number of disks> <number of files> <data file size>"
   sys.exit()
 
-disknum=int(sys.argv[1])
+servernum=int(sys.argv[1])
 filenum=int(sys.argv[2])
-total=int(sys.argv[3])
-extsize=int(sys.argv[4]) # extent size of EXT3
+total=int(sys.argv[3]) / blocksize
+#extsize=int(sys.argv[4]) # extent size of EXT3
 #length = 12 # In EXT3, the first extent length is 12.
-print "Generating disk parameters. Disk number: ", disknum, " File number: ", filenum, " Data File Size: ", total, " Extent Size: ", extsize
+print "Generating disk parameters. Server number: ", servernum, " File number: ", filenum, " Data File Size(in 4k block): ", total
 name1=str('ext')
 
-for n in range (0, disknum):
+total
+
+for n in range (0, servernum):
   if n < 10:
     name = name1 + str('00%(n)d' %{"n":n})
   else:

@@ -13,7 +13,7 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-package dataserver;
+package ned.dataserver;
 
 simple LFS_M {
     parameters:

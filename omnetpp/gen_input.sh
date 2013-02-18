@@ -40,4 +40,4 @@ ${PYTHON_PREFIX}python ./make-ed.py $SVR_NUM $FILE_NUM $STRIPE_SIZE
 cd ../../../..
 
 cd config/lfslayout/in/synthetic
-${PYTHON_PREFIX}python ./gen.py $SVR_NUM $FILE_NUM
+${PYTHON_PREFIX}python ./gen.py $SVR_NUM $FILE_NUM $FILE_SIZE
