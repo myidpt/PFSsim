@@ -20,6 +20,12 @@
 #include "scheduler/FIFO.h"
 #include "scheduler/SFQ.h"
 #include "scheduler/SSFQ.h"
+#include "scheduler/DSFQA.h"
+#include "scheduler/DSFQD.h"
+#include "scheduler/DSFQF.h"
+#include "scheduler/DSFQALB.h"
+#include "scheduler/DSFQATB.h"
+#include "scheduler/SFQRC.h"
 
 class Proxy : public cSimpleModule{
 protected:
@@ -30,6 +36,8 @@ protected:
 	double newjob_proc_time;
 	double finjob_proc_time;
 	IQueue * queue;
+	gPacket * alg_timer;
+	double alg_prop_int;
 public:
 	Proxy();
 	void initialize();
@@ -37,16 +45,19 @@ public:
 
 	inline void handleJobReq(gPacket *);
 	inline void handleJobReq2(gPacket *);
-	inline void handleJobDisp(gPacket *);
-	inline void handleJobRespFinComp(gPacket *);
-	inline void handleJobRespFinComp2(gPacket *);
-	inline void handleJobFin(gPacket *);
+
+	inline void handleReadLastWriteFin(gPacket *);
+	inline void handleReadLastWriteFin2(gPacket *);
+
+	inline void handleMinorReadWrite(gPacket *);
+
+	inline void handleAlgorithmTimer();
 
 	inline void scheduleJobs();
 	inline void sendSafe(gPacket *);
 
 	void handleInterSchedulerPacket(sPacket *);
-	void propagateSPacket(sPacket *);
+	void propagateSPackets();
 	void finish();
 	virtual ~Proxy();
 };

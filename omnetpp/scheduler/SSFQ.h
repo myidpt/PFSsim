@@ -13,6 +13,7 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 //
 
+// The SSFQ algorithm realizes packet splitting/assembling in addition to the original SFQ algorithm.
 #ifndef SSFQ_H_
 #define SSFQ_H_
 
@@ -27,7 +28,7 @@ protected:
 	long maxSubReqSize;
 
 public:
-	SSFQ(int, int, int);
+	SSFQ(int, int, int, const char *);
 	virtual void pushWaitQ(bPacket *);
 	virtual bPacket * popOsQ(long id);
 	virtual ~SSFQ();

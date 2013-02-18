@@ -34,6 +34,7 @@ void ITrace::initialize(int tid, double t, int pfsfid, long long off, long s, in
 void ITrace::initialize(const AppRequest * request) {
 	ID = request->getID();
 	startTime = request->getStarttime();
+	finishTime = request->getFinishtime();
 	pfsFileID = request->getFileID();
 	offset = request->getHighoffset() * LOWOFFSET_RANGE + request->getLowoffset();
 	totalSize = request->getTotalSize();

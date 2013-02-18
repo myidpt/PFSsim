@@ -22,8 +22,7 @@ PrintError::PrintError() {
 }
 
 void PrintError::check(){
-//	while(1)
-//		sleep(5);
+	throw;
 }
 
 void PrintError::print(string locname, string sentence){

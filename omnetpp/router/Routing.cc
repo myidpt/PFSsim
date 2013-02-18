@@ -30,30 +30,24 @@ void Routing::handleMessage(cMessage *msg)
 	case LAYOUT_RESP:
 		send(msg, "cout", ((qPacket *)msg)->getClientID());
 		break;
-//	case JOB_REQ:
-//	case JOB_REQ_LAST:
-//		send(msg, "schout", ((gPacket *)msg)->getDsID());
-//		break;
-	case JOB_DISP:
-	case JOB_DISP_LAST:
-	case JOB_REQ:
+	case PFS_W_DATA: // client -> server
+	case PFS_W_DATA_LAST:
+	case PFS_W_REQ:
+	case PFS_R_REQ:
 		if(strstr(msg->getArrivalGate()->getFullName(), "cin") != NULL)
 			send(msg, "schout", ((gPacket *)msg)->getDsID());
 		else if(strstr(msg->getArrivalGate()->getFullName(), "schin") != NULL)
 			send(msg, "dsout", ((gPacket *)msg)->getDsID());
 		break;
-	case JOB_FIN:
-	case JOB_FIN_LAST:
-	case JOB_RESP:
+	case PFS_W_RESP:
+	case PFS_R_DATA:
+	case PFS_R_DATA_LAST:
+	case PFS_W_FIN:
 		if(strstr(msg->getArrivalGate()->getFullName(), "dsin") != NULL)
 			send(msg, "schout", ((gPacket *)msg)->getDsID());
 		else if(strstr(msg->getArrivalGate()->getFullName(), "schin") != NULL)
 			send(msg, "cout", ((gPacket *)msg)->getClientID());
 		break;
-//	case JOB_RESP:
-//	case JOB_RESP_LAST:
-//		send(msg, "cout", ((gPacket *)msg)->getClientID());
-//		break;
 	case PROP_SCH:
 		handleSPacketPropagation((sPacket *)msg);
 		break;
@@ -61,15 +55,19 @@ void Routing::handleMessage(cMessage *msg)
 }
 
 void Routing::handleSPacketPropagation(sPacket * spkt){
-	cGate * arrgate = spkt->getArrivalGate();
-	for(int i = 0; i < numSchedulers; i ++){
-		if(arrgate != gate("interschin", i)){
-			sPacket * tmp = new sPacket("PROP_SCH", PROP_SCH);
-			tmp->setApp(spkt->getApp());
-			tmp->setLength(spkt->getLength());
-			send(tmp, "interschout", i);
+	int srcId = spkt->getSrc();
+	if(spkt->getDst() == -1){
+		for(int i = 0; i < numSchedulers; i ++){
+			if(srcId != i){
+				sPacket * tmp = new sPacket(*spkt);
+				tmp->setDst(i);
+				send(tmp, "interschout", i);
+			}
 		}
+		delete spkt;
+	}else{
+		send(spkt, "interschout", spkt->getDst());
 	}
-	delete spkt;
+
 }
 

@@ -27,16 +27,16 @@ sync = 0
 random.seed()
 for i in range(0, nclient):
 	if i >= 100:
-		name1 = str('trace%d' %i)
+		name1 = str('client%d' %i)
 	elif i >= 10:
-		name1 = str('trace0%d' %i)
+		name1 = str('client0%d' %i)
 	else:
-		name1 = str('trace00%d' %i)
+		name1 = str('client00%d' %i)
 	for j in range(0, ntrace):
 		if j < 10:
-			name = name1 + str('0%d' %j)
+			name = name1 + str('trace0%d' %j)
 		else:
-			name = name1 + str('%d' %j)
+			name = name1 + str('trace%d' %j)
 		f = open(name, 'w')
 		time = random.random() * 0.1
 		sync = 0

@@ -1,4 +1,3 @@
-
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -39,7 +38,11 @@ network pfssim_1
         }
         channel PChannel extends ned.DatarateChannel
         {
-            delay = 0 us;
+            delay = 0 ms;
+        }
+        channel InterSchChannel extends ned.DatarateChannel
+        {
+            delay = 0.05 ms;
         }
     submodules:
         c[numClients]: Client {
@@ -80,7 +83,7 @@ network pfssim_1
         for i=0..numDservers-1 {
             switch.ds[i] <--> Channel <--> ds[i].g;
             switch.proxy[i] <--> PChannel <--> proxy[i].g;
-            switch.intersch[i] <--> PChannel <--> proxy[i].schg;
+            switch.intersch[i] <--> InterSchChannel <--> proxy[i].schg;
         }
 
         // MS-Router channels

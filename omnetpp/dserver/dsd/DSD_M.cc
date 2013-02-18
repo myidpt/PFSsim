@@ -13,22 +13,6 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 //
 
-/*
- * Currently the DSD_M just adds up some processing delay to the incoming (from eth) packets.
- */
-
-// Message kind conversions:
-// Read request comes:
-// JOB_REQ -> SELF_JOB_DISP_LAST
-// Small write request comes:
-// JOB_REQ -> SELF_JOB_DISP_LAST
-// Write request comes:
-// JOB_REQ -> SELF_JOB_REQ -> JOB_RESP
-// Write data comes (not the last one):
-// JOB_DISP -> SELF_JOB_DISP
-// Write data comes (the last one):
-// JOB_DISP_LAST -> SELF_JOB_DISP_LAST
-
 #include "dserver/dsd/DSD_M.h"
 
 int DSD_M::idInit = 0;
@@ -59,102 +43,120 @@ void DSD_M::initialize(){
 	}
 }
 
+/*
+ * Receive from Ethernet:
+ * PFS_W_REQ, PFS_R_REQ, PFS_W_DATA, PFS_W_DATA_LAST
+ * Inside:
+ * SELF_PFS_W_REQ, SELF_PFS_W_DATA, SELF_PFS_W_DATA_LAST, PFS_R_DATA, PFS_R_DATA_LAST, PFS_W_FIN
+ * Receive from VFS:
+ * LFILE_RESP
+ */
 void DSD_M::handleMessage(cMessage * cmsg) {
-	/*
-	 * 			        JOB_DISP >			  LFILE_REQ >
-	 *  router/switch <------------> DSD_M <--------------> VFS
-	 *                  < JOB_FIN  	    	 < LFILE_RESP
-	 */
 	gPacket * gpkt = (gPacket *)cmsg;
 	if(((gPacket *)cmsg)->getClientID() > 1000){
 		PrintError::print("DSD_M", "ClientID > 1000", ((gPacket *)cmsg)->getClientID());
 	}
-
+#ifdef MSG_CLIENT
+	cout << "DSD[" << myID << "] " << MessageKind::getMessageKindString(gpkt->getKind()) << " ID=" << gpkt->getID() << endl;
+#endif
 	switch(gpkt->getKind()){
-	case JOB_REQ: // First-round packets for write or read requests, or small write requests.
-//		cout << "time=" << SIMTIME_DBL(simTime()) << " Server #" << myID << " packet #" << gpkt->getID() << " size=" << gpkt->getByteLength() << endl;
-		handle_JobReq(gpkt);
-		break;
-	case SELF_JOB_REQ:
-		send_JobResp(gpkt);
+	// From Ethernet:
+	case PFS_W_REQ: // First-round packets for write or read requests, or small write requests.
+	case PFS_R_REQ:
+		handleReadWriteReq(gpkt);
 		break;
 
-	case JOB_DISP: // Data packet.
-	case JOB_DISP_LAST: // Last data packet.
-//		cout << "time=" << SIMTIME_DBL(simTime()) << " Server #" << myID << " packet #" << gpkt->getID() << " size=" << gpkt->getByteLength() << endl;
-		handle_JobDisp(gpkt);
+	case PFS_W_DATA:
+	case PFS_W_DATA_LAST:
+		handleWriteDataPacket(gpkt);
 		break;
-	case SELF_JOB_DISP:
-	case SELF_JOB_DISP_LAST:
+
+	// From inside:
+	case SELF_PFS_W_REQ:
+		handleSelfWriteReq(gpkt);
+		break;
+
+	case SELF_PFS_W_DATA:
+	case SELF_PFS_W_DATA_LAST:
 		enqueue_dispatch_VFSReqs(gpkt);
 		break;
 
+	case PFS_R_DATA:
+	case PFS_R_DATA_LAST:
+	case PFS_W_FIN:
+		sendToEth(gpkt);
+		break;
+
+	// From VFS:
 	case LFILE_RESP:
 		handle_VFSResp(gpkt);
 		break;
-	case JOB_FIN:
-	case JOB_FIN_LAST:
-		sendToEth(gpkt);
-		break;
+
 	}
 }
 
-void DSD_M::handle_JobReq(gPacket * gpkt){
+
+void DSD_M::handleReadWriteReq(gPacket * gpkt) {
 #ifdef DSD_DEBUG
-	cout << "[" << SIMTIME_DBL(simTime()) << "] DSD_M#" << myID << ": handle_JobReq. New Arrived Job #" << gpkt->getID() << endl;
+	cout << "[" << SIMTIME_DBL(simTime()) << "] DSD_M#" << myID << ": handleReadWriteReq. New Arrived Job #"
+			<< gpkt->getID() << endl;
 	fflush(stdout);
 #endif
-
 	gpkt->setArrivaltime(SIMTIME_DBL(simTime()));
-	if(gpkt->getSize() < small_io_size_threshold && !gpkt->getRead()){ // Small write packet, you need to process both the metadata and the data.
-		gpkt->setKind(SELF_JOB_DISP_LAST);
-		if(write_data_proc_time + write_metadata_proc_time != 0 && gpkt->getSize() < small_io_size_threshold )
+	if(gpkt->getSize() < small_io_size_threshold && gpkt->getKind() == PFS_W_REQ){ // Small write packet, you need to process both the metadata and the data.
+		gpkt->setKind(SELF_PFS_W_REQ);
+		if(write_data_proc_time + write_metadata_proc_time != 0) {
 			scheduleAt((simtime_t)(SIMTIME_DBL(simTime()) + write_data_proc_time + write_metadata_proc_time), gpkt);
-		else
+		} else {
 			enqueue_dispatch_VFSReqs(gpkt);
+		}
 	}
-	else if(gpkt->getRead()){ // Read request packet, you need to process the read it triggers and return all of them.
-		gpkt->setKind(SELF_JOB_DISP_LAST);
-		if(read_metadata_proc_time != 0) // Consider the delay.
+	else if(gpkt->getKind() == PFS_R_REQ) { // Read request packet, you need to process the read it triggers and return all of them.
+		gpkt->setKind(SELF_PFS_R_REQ);
+		if(read_metadata_proc_time != 0) {// Consider the delay.
 			scheduleAt((simtime_t)(SIMTIME_DBL(simTime()) + read_metadata_proc_time), gpkt);
-		else
+		} else {
 			enqueue_dispatch_VFSReqs(gpkt);
+		}
 	}
 	else{ // Write request packet. Return it, it does not trigger any writes it self (but the following packets do).
-		gpkt->setKind(SELF_JOB_REQ);
-//		if(!gpkt->getRead()){
-		if(write_metadata_proc_time != 0) // Consider the delay.
+		gpkt->setKind(SELF_PFS_W_REQ);
+		if(write_metadata_proc_time != 0) { // Consider the delay.
 			scheduleAt((simtime_t)(SIMTIME_DBL(simTime()) + write_metadata_proc_time), gpkt);
-		else
-			send_JobResp(gpkt);
-//		}else{
-//			if(read_metadata_proc_time != 0) // Consider the delay.
-//				scheduleAt((simtime_t)(SIMTIME_DBL(simTime()) + read_metadata_proc_time), gpkt);
-//			else
-//				sendJobResp(gpkt);
-//		}
+		} else {
+			sendWriteResp(gpkt);
+		}
 	}
 }
 
-void DSD_M::send_JobResp(gPacket * gpkt){
+void DSD_M::handleSelfWriteReq(gPacket * gpkt) {
+	if(gpkt->getSize() < small_io_size_threshold && gpkt->getKind() == PFS_W_REQ) { // Small write packet.
+		enqueue_dispatch_VFSReqs(gpkt);
+	} else { // big write request
+		sendWriteResp(gpkt);
+	}
+}
+
+void DSD_M::sendWriteResp(gPacket * gpkt){
 	gpkt->setDispatchtime(SIMTIME_DBL(simTime()));
 	gpkt->setFinishtime(SIMTIME_DBL(simTime()));
-	gpkt->setKind(JOB_RESP);
+	gpkt->setKind(PFS_W_RESP);
 	sendToEth(gpkt);
 }
 
-void DSD_M::handle_JobDisp(gPacket * gpkt){
+void DSD_M::handleWriteDataPacket(gPacket * gpkt){
 #ifdef DSD_DEBUG
-//	if(myID == 4)
-	cout << "[" << SIMTIME_DBL(simTime()) << "] DSD_M#" << myID << ": New Arrived Job #" << gpkt->getID() << endl;
+	cout << "[" << SIMTIME_DBL(simTime()) << "] DSD_M#" << myID << ": handleWriteDataPacket packet #"
+			<< gpkt->getID() << endl;
 	fflush(stdout);
 #endif
 	gpkt->setArrivaltime(SIMTIME_DBL(simTime()));
 
-	if(gpkt->getKind() == JOB_DISP) // Write not last one.
-		gpkt->setKind(SELF_JOB_DISP);
-	else if(gpkt->getKind() == JOB_DISP_LAST) // Write last one.
-		gpkt->setKind(SELF_JOB_DISP_LAST);
+	if(gpkt->getKind() == PFS_W_DATA) { // Write not last one.
+		gpkt->setKind(SELF_PFS_W_DATA);
+	} else if(gpkt->getKind() == PFS_W_DATA_LAST) {
+		gpkt->setKind(SELF_PFS_W_DATA_LAST);
+	}
 
 	if(write_data_proc_time != 0) // Consider the delay.
 		scheduleAt((simtime_t)(SIMTIME_DBL(simTime()) + write_data_proc_time), gpkt);

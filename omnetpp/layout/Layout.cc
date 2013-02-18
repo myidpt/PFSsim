@@ -15,10 +15,20 @@
 
 #include "Layout.h"
 
-Layout::Layout(int fid) {
-	fileId = fid;
+Layout::Layout() {
+	fileID = -1;
 	setWindowSize(-1);
 	setServerNum(0);
+}
+
+Layout::Layout(int fid) {
+	fileID = fid;
+	setWindowSize(-1);
+	setServerNum(0);
+}
+
+void Layout::setFileID(int fid) {
+	fileID = fid;
 }
 
 void Layout::setWindowSize(long size){
@@ -50,6 +60,7 @@ void Layout::setServerStripeSizes(int servernum, long size[]){
 	}
 }
 void Layout::setLayout(qPacket * qpkt){
+	fileID = qpkt->getFileId();
 	serverNum = qpkt->getDsNum();
 	windowSize = 0;
 	for(int i = 0; i < serverNum; i ++){
@@ -72,36 +83,36 @@ void Layout::setServerID(int index, int serverid){
 void Layout::setServerStripeSize(int index, long size){
 	serverStripeSizes[index] = size;
 }
-int const Layout::getFileID(){
-	return fileId;
+int Layout::getFileID() const {
+	return fileID;
 }
-long const Layout::getWindowSize(){
+long Layout::getWindowSize() {
 	if(windowSize == -1)
 		calculateWindowSize();
 	return windowSize;
 }
-int const Layout::getServerNum(){
+int Layout::getServerNum() const {
 	return serverNum;
 }
-int const Layout::getServerID(int index){
+int Layout::getServerID(int index) const {
 	// assert: index < serverNum
-	if(index >= serverNum)
-		return 0;
+	if(index >= serverNum) {
+		throw "The index is bigger than serverNum.";
+	}
 	return serverList[index];
 }
-long const Layout::getServerStripeSize(int index){
-	// assert: index < serverNum
+long Layout::getServerStripeSize(int index) const {
 	if(index >= serverNum)
-		return 0;
+		throw "The index is bigger than serverNum.";
 	return serverStripeSizes[index];
 }
-int const Layout::findServerIndex(int id){
+int Layout::findServerIndex(int id) const {
 	for(int i = 0; i < serverNum; i ++)
 		if(serverList[i] == id)
 			return i;
 	return -1;
 }
-void const Layout::calculateWindowSize(){
+void Layout::calculateWindowSize(){
 	windowSize = 0;
 	for(int i = 0; i < serverNum; i ++)
 		windowSize += serverStripeSizes[i];

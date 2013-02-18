@@ -39,30 +39,32 @@
 
 class Layout {
 private:
-	int fileId;
+	int fileID;
 	long windowSize; // The size of the data in a window.
 	int serverNum; // Number of DServer storing this requested data.
 	int serverList[MAX_DS]; // The list of DServer indexes storing this requested data.
 	long serverStripeSizes[MAX_DS]; // The size of data chunk assigned to the server.
 //	long serverShares[MAX_DS]; // The size of data in a window on each server.
 public:
+	Layout();
 	Layout(int fid);
 	virtual ~Layout();
+	void setFileID(int id);
 	void setWindowSize(long size);
 	void setServerNum(int num);
-	void setServerList(int servernum, int list[]);
-	void setServerStripeSizes(int servernum, long size[]);
-	void setLayout(qPacket *);
-	void setqPacket(qPacket *);
+	void setServerList(int serverNum, int list[]);
+	void setServerStripeSizes(int serverNum, long size[]);
+	void setLayout(qPacket * packet);
+	void setqPacket(qPacket * packet);
 	void setServerID(int index, int serverID);
 	void setServerStripeSize(int index, long share);
-	int const getFileID();
-	long const getWindowSize();
-	int const getServerNum();
-	int const getServerID(int index); // The input index is the index in the serverList or serverShares.
-	long const getServerStripeSize(int index); // The input index is the index in the serverList or serverShares.
-	int const findServerIndex(int id); // Find a server's index in the list given its ID.
-	void const calculateWindowSize();
+	int getFileID() const;
+	long getWindowSize();
+	int getServerNum() const;
+	int getServerID(int index) const; // The input index is the index in the serverList or serverShares.
+	long getServerStripeSize(int index) const; // The input index is the index in the serverList or serverShares.
+	int findServerIndex(int id) const; // Find a server's index in the list given its ID.
+	void calculateWindowSize();
 };
 
 #endif /* LAYOUT_H_ */

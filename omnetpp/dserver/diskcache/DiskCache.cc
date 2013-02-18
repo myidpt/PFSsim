@@ -360,8 +360,8 @@ void DiskCache::handleMessage(cMessage *msg)
 
 void DiskCache::handlePageReq(PageRequest * req){
 #ifdef DISKCACHE_DEBUG
-	cout << "DiskCache #" <<  myID << ": handlePageReq. ID[" << req->getID() << "], FID[" << req->getFileId() << ", startpage["
-			<< req->getPageStart() << "], endpage[" << req->getPageEnd() << "]." << endl;;
+	cout << "DiskCache #" <<  myID << ": handlePageReq. ID[" << req->getID() << "], FID[" << req->getFileId() <<
+	        "], startpage[" << req->getPageStart() << "], endpage[" << req->getPageEnd() << "]." << endl;;
 	fflush(stdout);
 #endif
 	if(req->getID() == BG_WRITEOUT_ID){
@@ -407,12 +407,12 @@ void DiskCache::handlePageReq(PageRequest * req){
 // Read-ahead does not go through this function, because there's no cache access triggered by read-ahead.
 void DiskCache::handleCacheAccessResp(PageRequest * resp){
 #ifdef DISKCACHE_DEBUG
-    	cout << "DiskCache #" <<  myID << ": Cache access done." << endl;
+    	cout << "DiskCache #" <<  myID << ": Cache access done. resp: [" << resp->getPageStart() << ","
+    	        << resp->getPageEnd() << "]" << endl;
 #endif
 	// Update the requested pr. If the request is finished, send it back.
 	long id = resp->getID();
 	long subid = resp->getSubID();
-	pr_t * pr;
 	list<PageRequest *>::iterator it;
 	PageRequest * origreq;
 	map<PageRequest *, pr_t *>::iterator it2;
@@ -429,9 +429,13 @@ void DiskCache::handleCacheAccessResp(PageRequest * resp){
 				PrintError::print("DiskCache", myID, "can not find request in map prs.", (*it)->getID());
 				return;
 			}
+			// Later modified, Yonggang.
+			// The page range and original requests need to be updated.
+			it2->second->end = resp->getPageEnd();
+			origreq->setPageEnd(resp->getPageEnd());
 
-			pr = it2->second;
 			if(resp->getPageEnd() == origreq->getPageEnd()){ // The original part is done.
+	            pr_t * pr = it2->second;
 				if(pr->readahead_list != NULL){ // RA is undone.
 #ifdef DISKCACHE_DEBUG
 					cout << "DiskCache #" <<  myID << ": Just the original part is done. PageReq finished: ["
@@ -653,10 +657,12 @@ void DiskCache::accessCache(){
 		if(!req->getPending()){
 			req->setPending(true);
 			if(req->getRead()){
-				if(readCache(req))
+				if(readCache(req)) {
 					it = reqQ->begin(); // This means a request was just finished, or a page range is locked.
-			}else
+				}
+			}else {
 				writeCache(req);
+			}
 		}
 	}
 }
@@ -781,18 +787,26 @@ int DiskCache::readCache(PageRequest * req){
 				if(!disable_ra)
 					file->f_ra->update_flag_incache(start, end-start, false); // Update the read ahead INCACHE flag
 			}else{ // beginning cached. - need to see if it is RA? If it is, ignore it.
-				if(cpr->end < rpr->end)
+				if(cpr->end < rpr->end) {
 					end = cpr->end;
-				else
+				}
+				else {
 					end = rpr->end;
+				}
 				end = start + getAccessSize(req->getFileId(), start, end, true, true);
 
 				if(rpr->readahead_list == NULL ||
-						(rpr->readahead_list != NULL && rpr->readahead_list->start > rpr->start)){ // You still have original read task undone.
-					cacheaccess_end = start + getAccessSize(req->getFileId(), start, cacheaccess_end, true, true);
-					scheduleCacheAccess(req->getID(), req->getSubID(), req->getFileId(), start, cacheaccess_end, true);
-					if(!disable_ra)
-						file->f_ra->update_flag_incache(start, cacheaccess_end - start, true); // Update the read ahead INCACHE flag
+						(rpr->readahead_list != NULL && rpr->readahead_list->start > rpr->start)){
+				    // You still have original read task undone.
+					// cacheaccess_end = start + getAccessSize(req->getFileId(), start, cacheaccess_end, true, true);
+				    // Yonggang, later committed.
+                    scheduleCacheAccess(req->getID(), req->getSubID(), req->getFileId(), start, end, true); // Yonggang, later modified.
+					// scheduleCacheAccess(req->getID(), req->getSubID(), req->getFileId(), start, cacheaccess_end, true);
+					if(!disable_ra) {
+					    file->f_ra->update_flag_incache(start, end - start, true); // Yonggang, later modified.
+						// file->f_ra->update_flag_incache(start, cacheaccess_end - start, true);
+					}
+					// Update the read ahead INCACHE flag
 				}else{ // ONLY READ-AHEAD modifies rpr.
 					// This happens if the read ahead content is already got by other requests.
 					rpr->start = end; // Read-ahead does not access on-cache data.
@@ -922,7 +936,7 @@ void DiskCache::scheduleCacheAccess(long id, long subid, int fid, long start, lo
 		cache_acc_speed = cache_r_speed;
 	else
 		cache_acc_speed = cache_w_speed;
-	scheduleAt((simtime_t)(SIMTIME_DBL(simTime()) + (end - start) * cache_acc_speed), cacheAccess);
+	scheduleAt((simtime_t)(SIMTIME_DBL(simTime()) + (end - start) * cache_acc_speed), cacheAccess); // Set the timer.
 #ifdef DISKCACHE_DEBUG
 	cout << "DiskCache #" <<  myID << ": scheduleCacheAccess. [" << start << "," << end << "]" << endl;
 	fflush(stdout);
@@ -993,8 +1007,9 @@ void DiskCache::walkCache_update(const int fid, pr_t * addp, const bool preop, c
 			// You will enlarge the cache, you need to check free_pages.
 			// If there are not enough free pages, you need to reclaim some by calling the lru_free_pages function.
 			if((!preop) || (preop && disk && !read) || (preop && !disk && read)){
-				PrintError::print("DiskCache", myID, "cache increase operation not permitted!");
-				fprintf(stderr, "preop=%d, disk=%d, read=%d. [%ld %ld]\n", preop, disk, read, addp->start, addp->end);
+                fprintf(stderr, "preop=%d, disk=%d, read=%d. [%ld %ld]\n", preop, disk, read, addp->start, addp->end);
+                printCache(fid);
+				PrintError::print("DiskCache", myID, " Internal error - cache increase operation not permitted!");
 				return;
 			}
 
@@ -1197,11 +1212,17 @@ void DiskCache::walkCache_update(const int fid, pr_t * addp, const bool preop, c
 			}
 			file->pr_last = precachedp;
 
-			if(addp == NULL) // Receive the break signal.
+			if(addp == NULL) { // Receive the break signal.
 				break;
+			}
 		}
-		if(addp->start == addp->end) // addp size is zero, done.
+		if(addp->start == addp->end) { // addp size is zero, done.
 			break;
+		}
+		// If you are read + cache + preop, that means you may only partially read the cache. After this hit, break.
+		if (preop && !disk && read) {
+		    break;
+		}
 		precachedp = cachedp;
 		cachedp = cachedp->next;
 	}

@@ -47,20 +47,28 @@ void MetadataServer::initialize()
 	}
 }
 
-void MetadataServer::handleMessage(cMessage * cmsg)
-{
+void MetadataServer::handleMessage(cMessage * cmsg) {
+
+#ifdef MSG_MSERVER
+	cout << "MDS[" << myID << "] " << MessageKind::getMessageKindString(cmsg->getKind()) << " ID="
+			<< ((bPacket *)cmsg)->getID() << endl;
+#endif
 	switch(cmsg->getKind()){
 	case LAYOUT_REQ:
 		handleMetadataPacket((qPacket*)cmsg);
 		break;
-	case JOB_REQ: // For data request.
+
+	case PFS_R_REQ: // For data request.
+	case PFS_W_REQ:
+	case PFS_W_DATA:
+	case PFS_W_DATA_LAST:
 	case LAYOUT_RESP: // For metadata reply.
 		sendSafe(cmsg);
 		break;
-		sendSafe(cmsg);
-	case JOB_RESP: // Receive the data packet response.
-	case JOB_FIN:
-	case JOB_FIN_LAST:
+
+	case PFS_W_RESP: // For data response.
+	case PFS_R_DATA:
+	case PFS_R_DATA_LAST:
 		handleDataPacketResponse((gPacket *)cmsg);
 	default:
 		PrintError::print("MetadataServer::handleMessage", "Unknown message type.", cmsg->getKind());
@@ -86,7 +94,10 @@ void MetadataServer::processPacketList(vector<cPacket *> * list) {
 	cout << "MetadataServer-" << myID << "::processPacketList packetID=" << ((bPacket *)(*it))->getID() << " ";
 #endif
 		switch ((*it)->getKind()) {
-		case JOB_REQ: // Scheduled to send.
+		case PFS_W_REQ: // Scheduled to send.
+		case PFS_R_REQ:
+		case PFS_W_DATA:
+		case PFS_W_DATA_LAST:
 #ifdef MS_DEBUG
 			cout << "JOB_REQ" << endl;
 #endif

@@ -22,15 +22,20 @@ TraceOutputStreamer::TraceOutputStreamer(OutputFiles * files)
 
 void TraceOutputStreamer::writeTrace(ITrace * trace) {
 	char buff[MaxLineLength];
-	snprintf(buff, MaxLineLength, "%d %d %d %lld %ld %lf %lf",
+	/*
+	snprintf(buff, MaxLineLength, "TIME=%lf, ID=%d FileID=%d R=%d OFFSET=%lld SIZE=%ld TT=%lf",
+	        trace->getStartTime(),
 			trace->getID(),
 			trace->getFileID(),
 			trace->getRead(),
 			trace->getOffset(),
 			trace->getTotalSize(),
-			SecToMS*(trace->getFinishTime() - trace->getStartTime()),
-			trace->getFinishTime());
-
+			trace->getFinishTime() - trace->getStartTime());
+    */
+	snprintf(buff, MaxLineLength, "%lf,%lf,%d",
+            trace->getStartTime(),
+            trace->getFinishTime() - trace->getStartTime(),
+            trace->getFileID());
 	outputFiles->writeLine(trace->getTraceFileID(), buff);
 }
 

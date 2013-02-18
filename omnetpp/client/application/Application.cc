@@ -1,31 +1,33 @@
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-// 
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see http://www.gnu.org/licenses/.
-// 
+/*
+ * Author: Yonggang Liu
+ * Application class simulates the applications in the real world. it sends out the trace requests to the PFSClient,
+ * and gets the trace responses from the PFSClient. The number of outstanding traces for each application is managed
+ * by this class.
+ */
 
 #include "Application.h"
 
 Define_Module(Application);
 
+/*
+ * Used to initialize the IDs for each application class.
+ */
 int Application::initID = 0;
 
+/*
+ * Initialize the ID.
+ */
 Application::Application() {
 	myID = initID ++;
 }
 
+/*
+ * 1. Initialize the input and output streamers.
+ * 2. generate the initial traces.
+ */
 void Application::initialize() {
 	StreamersFactory streamersfactory;
-	// For initialization of input trace files.
+	// For initialization of trace input files.
 	int count = par("trace_count").longValue();
 	int traceDigits = par("trace_file_trace_index_digits").longValue();
 	int clientDigits = par("trace_file_client_index_digits").longValue();
@@ -43,6 +45,7 @@ void Application::initialize() {
 		PrintError::print("Application::initialize", "trace input method is not correct.");
 	}
 
+	// For initialization of trace output files.
 	prefixBeforeClientID = par("trace_output_file_prefix_before_client_ID").stdstringValue();
 	prefixAfterClientID = par("trace_output_file_prefix_after_client_ID").stdstringValue();
 	postfix = par("trace_output_file_postfix").stdstringValue();
@@ -65,65 +68,40 @@ void Application::initialize() {
 	generateInitialTraces();
 }
 
+/*
+ * Handle the messages:
+ * TRACE_REQ comes from itself.
+ * TRACE_RESP comes from PFSClient.
+ */
 void Application::handleMessage(cMessage * message) {
 	switch(message->getKind()) {
 	case TRACE_REQ:
-		sendNewTrace((AppRequest *)message);
+		sendNewAppRequest((AppRequest *)message);
 		break;
 	case TRACE_RESP:
 		handleFinishedTrace((AppRequest *)message);
 		break;
 	default:
 		PrintError::print("Application::handleMessage", "Message kind not recognized: ", message->getKind());
+		break;
 	}
 }
 
-/// <summary>
-/// Process the initial traces.
-/// </summary>
+/*
+ * Generate the initial traces.
+ * Generate one trace request for each trace input flow.
+ */
 void Application::generateInitialTraces() {
-	SimpleTrace trace;
 	for(int i = 0; i < traceInput->getTraceFlowCount(); i ++) {
-		// Read trace.
-		if(! traceInput->readTrace(i, &trace)) {
-			// End of file.
-			return;
-		}
-
-		// Create AppRequest.
-		AppRequest * request = trace.createAppRequest();
-		request->setKind(TRACE_REQ);
-
-		// Schedule AppRequest.
-		double earliestSendTime = SIMTIME_DBL(simTime()) + traceProcessTime;
-		if(trace.getStartTime() > earliestSendTime) {
-			scheduleAt(trace.getStartTime(), request);
-		}
-		else {
-			request->setStarttime(earliestSendTime); // Renew the start time in trace.
-			sendNewTrace(request);
-		}
-#ifdef APP_DEBUG
-	cout << "Application-" << myID << "::GenerateInitialTrace TraceID=" << request->getID()
-			<< " TraceFileID=" << request->getTraceFileID() << " PFSFileID=" << request->getFileID()
-			<< " APP=" << request->getApp() << " HO=" << request->getHighoffset()
-			<< " LO=" << request->getLowoffset() << endl;
-#endif
+	    readOneTrace(i);
 	}
 }
 
-/// <summary>
-/// Send the AppRequest to PFSClient_M.
-/// </summary>
-void Application::sendNewTrace(AppRequest * request) {
-	sendSafe(request);
-}
-
-/// <summary>
-/// Print the trace.
-/// Destroy the old request and create a new request.
-/// Send the AppRequest to PFSClient_M.
-/// </summary>
+/*
+ * Print the finished trace.
+ * Destroy the old request and create a new request.
+ * Send the AppRequest to PFSClient.
+ */
 void Application::handleFinishedTrace(AppRequest * request) {
 	// Print the trace.
 	request->setFinishtime(SIMTIME_DBL(simTime()));
@@ -133,38 +111,72 @@ void Application::handleFinishedTrace(AppRequest * request) {
 		traceOutput->writeTrace(&trace);
 	}
 
-	// Destroy the old request and create a new one.
-	if(! traceInput->readTrace(request->getTraceFileID(), &trace)) {
-		// End of file.
-		return;
-	}
-	delete request;
+	int id = request->getTraceFileID();
+    delete request;
 
-	// This is a new request
-	AppRequest * newrequest = trace.createAppRequest();
-	newrequest->setKind(TRACE_REQ);
+    readOneTrace(id);
+}
 
-	// Schedule AppRequest.
-	double earliestSendTime = SIMTIME_DBL(simTime()) + traceProcessTime;
-	if(trace.getStartTime() > earliestSendTime) {
-		scheduleAt(trace.getStartTime(), newrequest);
-	}
-	else {
-		newrequest->setStarttime(earliestSendTime);
-		sendNewTrace(newrequest);
-	}
+/*
+ * Read one trace.
+ */
+void Application::readOneTrace(int id) {
+    // Read trace.
+    SimpleTrace trace;
+    if(! traceInput->readTrace(id, &trace)) {
+        // End of file.
+        return;
+    }
+
+    // Create AppRequest.
+    AppRequest * request = trace.createAppRequest();
+    request->setKind(TRACE_REQ);
+
+    // Schedule AppRequest.
+    double sendTime;
+    if (trace.getSync() == 0) { // Non-sync.
+        sendTime = trace.getStartTime();
+    } else { // sync.
+        sendTime = SIMTIME_DBL(simTime()) + trace.getStartTime();
+    }
+
+    double earliestSendTime = SIMTIME_DBL(simTime()) + traceProcessTime;
+    if (earliestSendTime > sendTime) {
+        sendTime = earliestSendTime;
+    }
+
+    request->setStarttime(sendTime); // Set the start time in trace.
+    if(sendTime > SIMTIME_DBL(simTime())) {
+        scheduleAt(sendTime, request);
+    } else {
+        sendNewAppRequest(request);
+    }
 #ifdef APP_DEBUG
-	cout << "Application-" << myID << "::GenerateInitialTrace TraceID=" << newrequest->getID()
-			<< " TraceFileID=" << newrequest->getTraceFileID() << " PFSFileID=" << newrequest->getFileID()
-			<< " APP=" << newrequest->getApp() << " HO=" << newrequest->getHighoffset()
-			<< " LO=" << newrequest->getLowoffset() << endl;
+    cout << "Application-" << myID << "::GenerateInitialTrace TraceID=" << request->getID()
+            << " TraceFileID=" << request->getTraceFileID() << " PFSFileID=" << request->getFileID()
+            << " APP=" << request->getApp() << " HO=" << request->getHighoffset()
+            << " LO=" << request->getLowoffset() << endl;
 #endif
 }
 
+/*
+ * Send the AppRequest.
+ */
+void Application::sendNewAppRequest(AppRequest * request) {
+    sendSafe(request);
+}
+
+/*
+ * Send the AppRequest to PFSClient.
+ * Because the connection between Application and PFSClient is ideal, just send it.
+ */
 void Application::sendSafe(AppRequest * request) {
 	send(request, "pfs$o");
 }
 
+/*
+ * Clean the memory.
+ */
 void Application::finish() {
 	if (traceInput != NULL) {
 		delete traceInput;

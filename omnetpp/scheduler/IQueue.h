@@ -30,18 +30,22 @@ class IQueue {
 protected:
 	int myID;
 	int degree;
-	double weight[MAX_APP]; // Weight for every application
+	int appNum;
 public:
 	IQueue(int id, int deg);
-	virtual void pushWaitQ(bPacket *) = 0;
-	virtual bPacket * dispatchNext() = 0;
-	virtual bPacket * popOsQ(long id) = 0;
-	virtual bPacket * queryJob(long id) = 0;
-	virtual bPacket * popOsQ(long id, long subid) = 0;
+	virtual void pushWaitQ(bPacket *);
+	virtual void pushWaitQ(bPacket * packet, double time);
+	virtual bPacket * dispatchNext();
+	virtual bPacket * dispatchNext(double time);
+	virtual bPacket * popOsQ(long id);
+    virtual bPacket * popOsQ(long id, double time);
+	virtual bPacket * popOsQ(long id, long subid);
+    virtual bPacket * popOsQ(long id, long subid, double time);
+    virtual bPacket * queryJob(long id) = 0;
 	virtual bPacket * queryJob(long id, long subid) = 0;
-	virtual sPacket * propagateSPacket() = 0;
-	virtual void receiveSPacket(sPacket *) = 0;
-	virtual bool isEmpty() = 0;
+	virtual sPacket * propagateSPacket();
+	virtual void receiveSPacket(sPacket *);
+	virtual bool isEmpty();
 	virtual ~IQueue();
 };
 

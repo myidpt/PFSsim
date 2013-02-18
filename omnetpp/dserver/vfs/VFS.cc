@@ -77,8 +77,10 @@ void VFS::handlePageResp(PageRequest * resp){
 			<< "], endpage[" << resp->getPageEnd() << "], read[" << resp->getRead() << "]." << endl;
 	fflush(stdout);
 #endif
+
 	if(pageReqQ->popOsQ(resp->getID(), resp->getSubID()/VFS_SUB_ID_BASE*VFS_SUB_ID_BASE) == NULL){ // Must see the return.
-		PrintError::print("VFS", "Cannot find the page request back. ID=", resp->getSubID());
+		cerr << "ID=" << resp->getID() << endl;
+		PrintError::print("VFS", "Cannot find the page request back. SubID=", resp->getSubID());
 		return;
 	}
 	if(resp->getSubID() / VFS_SUB_ID_BASE % 10 != 0){ // This bit is not zero. A read triggered by a write comes back.
@@ -209,7 +211,8 @@ void VFS::dispatchNextFileReq(){
 	if(subreqnum == 0){ // Read or write without skew.
 		PageRequest * pagereq = new PageRequest("PAGE_REQ", PAGE_REQ);
 		pagereq->setID(filereqpkt->getID());
-		pagereq->setSubID(filereqpkt->getSubID());
+//		pagereq->setSubID(filereqpkt->getSubID());
+		pagereq->setSubID(0);
 		pagereq->setPageStart(pagestart);
 		pagereq->setPageEnd(pageend);
 		pagereq->setRead(filereqpkt->getRead());

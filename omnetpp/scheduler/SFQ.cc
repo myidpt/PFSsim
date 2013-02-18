@@ -17,16 +17,15 @@
 
 FILE * SFQ::schfp = NULL;
 
-SFQ::SFQ(int id, int deg, int tlapps):IQueue(id, deg) {
+SFQ::SFQ(int id, int deg, int tlapps, const char * alg_param) : IQueue(id, deg) {
 	vtime = 0;
-	totalapps = tlapps;
+	appNum = tlapps;
 	for(int i = 0; i < MAX_APP; i ++)
 		maxftags[i] = 0;
-	for(int wi = 0; wi < MAX_APP; wi ++){
-		IQueue::weight[wi] = 1000000;
-	}
 
 	osQ = new list<Job*>();
+	startpos = 0;
+	setWeights(alg_param);
 #ifdef SCH_PRINT
 	if(id == 0){
 		char schfn[30] = "schedprint/queue";
@@ -39,26 +38,22 @@ SFQ::SFQ(int id, int deg, int tlapps):IQueue(id, deg) {
 }
 
 void SFQ::pushWaitQ(bPacket * pkt){
+#ifdef SCH_DEBUG
+	cout << "pushWaitQ: " << pkt->getID() << endl;
+#endif
 	struct Job * job = new Job();
 	int app = pkt->getApp();
 	job->pkt = pkt;
 	if(waitQ[app] == NULL){ // Not initialized yet
 		waitQ[app] = new list<Job*>();
 	}
-	if(waitQ[app]->empty()){ // No back-logged jobs.
+
+	if(waitQ[app]->empty()) // No back-logged jobs.
 		job->stag = (maxftags[app] > vtime) ? maxftags[app] : vtime;
-		job->ftag = job->stag + job->pkt->getSize() / IQueue::weight[app];
-	}
-/*
-	// stag(k) = max{ftag(k-1), vtime}
-	job->stag = maxftags[app];
-	if(vtime > job->stag)
-		job->stag = vtime;
+	else // queue not empty
+		job->stag = waitQ[app]->back()->ftag;
+	job->ftag = job->stag + job->pkt->getSize() / weight[app];
 
-	job->ftag = job->stag + job->pkt->getSize() / IQueue::weight[app];
-
-	maxftags[app] = job->ftag;
-*/
 	waitQ[app]->push_back(job);
 #ifdef SCH_PRINT
 	printNJ(job);
@@ -70,28 +65,31 @@ bPacket * SFQ::dispatchNext(){
 		return NULL;
 
 	// Get the job with the lowest start tag.
-	double mintag = 1000000000;
+	double mintag = MAX_TAG_VALUE;
 	int minindex = -1;
 
 	// Random, for fairness.
-	int start = (float)rand() / RAND_MAX * totalapps;
 	bool firstround = true;
-	for(int i = start; ; i ++){
-		if(i == totalapps)
+	int i = startpos;
+	while(1){
+		if(i >= appNum)
 			i = 0;
-		if(i == start){
+		if(i == startpos){
 			if(firstround == true)
 				firstround = false;
 			else
 				break;
 		}
-		if(waitQ[i]->empty()) // No job in queue
+		if(waitQ[i] == NULL || waitQ[i]->empty()){ // No job in queue
+			i++;
 			continue;
+		}
 		// Only compare to the front (The earliest job).
 		if(minindex == -1 || mintag > waitQ[i]->front()->stag){ // Select the smallest stag.
 			minindex = i;
 			mintag = waitQ[i]->front()->stag;
 		}
+		i ++;
 	}
 	if(minindex == -1){ // No job to schedule.
 		return NULL;
@@ -100,6 +98,10 @@ bPacket * SFQ::dispatchNext(){
 	Job * job = waitQ[minindex]->front();
 	waitQ[minindex]->pop_front();
 	pushOsQ(job);
+	startpos = minindex; // Update the start position.
+	startpos ++;
+	if(startpos >= appNum)
+		startpos = 0;
 
 	// Update vtime
 	vtime = job->stag;
@@ -108,14 +110,20 @@ bPacket * SFQ::dispatchNext(){
 	if(waitQ[minindex]->empty()){
 		maxftags[minindex] = job->ftag;
 	}else{ // Set the tags of the next one in the wait queue.
+		// This is necessary because in DSFQ-D and DSFQ-F the stags and ftags of requests at front of queue may be changed.
 		Job * next = waitQ[minindex]->front();
+		next->ftag += job->ftag - next->stag;
 		next->stag = job->ftag; // vtime should be equal to job->stag, which is smaller than job->ftag.
-		next->ftag = next->stag + next->pkt->getSize() / IQueue::weight[minindex];
+//		next->ftag = next->stag + next->pkt->getSize() / weight[minindex];
 	}
 	bPacket * pkt = job->pkt;
 
 #ifdef SCH_PRINT
 	printDP(job);
+#endif
+
+#ifdef SCH_DEBUG
+	cout << "dispatchNext: " << pkt->getID() << endl;
 #endif
 
 	return pkt;
@@ -174,7 +182,7 @@ bPacket * SFQ::popOsQ(long id, long subid){
 
 	list<Job*>::iterator iter;
 	for(iter = osQ->begin(); iter != osQ->end(); iter ++){
-		if( (*iter)->pkt->getID() == id && (*iter)->pkt->getSubID() == subid){
+		if((*iter)->pkt->getID() == id && (*iter)->pkt->getSubID() == subid){
 			pkt = (*iter)->pkt;
 			osQ->erase(iter);
 #ifdef SCH_PRINT
@@ -231,11 +239,6 @@ bPacket * SFQ::queryJob(long id, long subid){
 	return pkt;
 }
 
-bool SFQ::isEmpty(){
-	return false; // Not implemented. TODO
-}
-
-
 sPacket * SFQ::propagateSPacket(){
 	PrintError::print("SFQ", "Calling propagateSPacket method in SFQ is prohibited.");
 	return NULL;
@@ -248,21 +251,21 @@ void SFQ::receiveSPacket(sPacket *){
 
 void SFQ::printNJ(Job * job){
 #ifdef SCH_PRINT
-	fprintf(schfp, "%.5lf\t[%d]\tNJ #%d {%d;%d #%d}\n",
-			SIMTIME_DBL(simTime()), myID, job->pkt->getApp(), waitQ[0]->size(), waitQ[1]->size(), osQ->size());
+	fprintf(schfp, "%.5lf\t[%d]\tNJ #%d {%d #%d}\n",
+			SIMTIME_DBL(simTime()), myID, job->pkt->getApp(), waitQ[job->pkt->getApp()]->size(), osQ->size());
 #endif
 }
 
 void SFQ::printDP(Job * job){
 #ifdef SCH_PRINT
-	fprintf(schfp, "%.5lf\t[%d]\tDP #%d [%.2lf %.2lf] {%d;%d #%d}\n",
-			SIMTIME_DBL(simTime()), myID, job->pkt->getApp(), job->stag, job->ftag, waitQ[0]->size(), waitQ[1]->size(), osQ->size());
+	fprintf(schfp, "%.5lf\t[%d]\tDP #%d [%.2lf %.2lf] {%d #%d}\n",
+			SIMTIME_DBL(simTime()), myID, job->pkt->getApp(), job->stag, job->ftag, waitQ[job->pkt->getApp()]->size(), osQ->size());
 #endif
 }
 void SFQ::printFIN(Job * job){
 #ifdef SCH_PRINT
-	fprintf(schfp, "%.5lf\t[%d]\tFIN #%d {%d;%d #%d}\n",
-			SIMTIME_DBL(simTime()), myID, job->pkt->getApp(), waitQ[0]->size(), waitQ[1]->size(), osQ->size());
+	fprintf(schfp, "%.5lf\t[%d]\tFIN #%d {%d #%d}\n",
+			SIMTIME_DBL(simTime()), myID, job->pkt->getApp(), waitQ[job->pkt->getApp()]->size(), osQ->size());
 #endif
 }
 
@@ -277,4 +280,21 @@ SFQ::~SFQ(){
 			delete waitQ[i];
 		}
 	}
+}
+
+void SFQ::setWeights(const char * alg_param){
+    const char * tmp = alg_param;
+    int i;
+    double w;
+    cout << " weights:";
+    while(1){
+        tmp = strchr(tmp, '[');
+        if(tmp == NULL)
+            break;
+        sscanf(tmp, "[%d %lf]", &i, &w);
+        weight[i] = w;
+        cout << " [" << i << "] $" << weight[i];
+        tmp ++;
+    }
+    cout << "." << endl;
 }

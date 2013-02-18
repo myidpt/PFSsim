@@ -3,16 +3,16 @@ import sys
 
 random.seed()
 
-if (len(sys.argv) != 3):
-  print sys.argv[0], " <number of disks> <number of files>"
+if (len(sys.argv) != 5):
+  print sys.argv[0], " <number of disks> <number of files> <data file size> <extent size>"
   sys.exit()
 
 disknum=int(sys.argv[1])
 filenum=int(sys.argv[2])
-print "Generating disk parameters. Disk number: ", disknum, " File number: ", filenum
-total = 16 * 1024 # 256MB, or 16K pages
-extsize = 1024 # typical extent size of EXT3
+total=int(sys.argv[3])
+extsize=int(sys.argv[4]) # extent size of EXT3
 #length = 12 # In EXT3, the first extent length is 12.
+print "Generating disk parameters. Disk number: ", disknum, " File number: ", filenum, " Data File Size: ", total, " Extent Size: ", extsize
 name1=str('ext')
 
 for n in range (0, disknum):

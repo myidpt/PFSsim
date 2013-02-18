@@ -21,7 +21,8 @@ using namespace std;
 
 class SFQ : public IQueue{
 protected:
-	int totalapps;
+    static const int MAX_TAG_VALUE = 10000000;
+    double weight[MAX_APP]; // Weight for every application
 	struct Job{
 		bPacket * pkt;
 		double stag; // The start tags for all applications
@@ -31,26 +32,27 @@ protected:
 	list<Job*> * osQ;
 	double maxftags[MAX_APP]; // store the finish tags for each job.
 	double vtime; // virtual time
+	int startpos; // The application first considered to be dispatched in the algorithm.
 
 	static FILE * schfp;
 
+    virtual void setWeights(const char *);
+
+    void printNJ(Job *);
+    void printDP(Job *);
+    void printFIN(Job *);
 public:
-	SFQ(int, int, int);
-	virtual bPacket * dispatchNext();
+	SFQ(int, int, int, const char *);
 	virtual void pushWaitQ(bPacket *);
+	virtual bPacket * dispatchNext();
 	virtual void pushOsQ(Job *);
 	virtual bPacket * popOsQ(long id);
+    virtual bPacket * popOsQ(long id, long subid);
 	virtual bPacket * queryJob(long id);
-	virtual bPacket * popOsQ(long id, long subid);
 	virtual bPacket * queryJob(long id, long subid);
-	virtual bool isEmpty();
 	virtual sPacket * propagateSPacket();
 	virtual void receiveSPacket(sPacket *);
 	virtual ~SFQ();
-
-	void printNJ(Job *);
-	void printDP(Job *);
-	void printFIN(Job *);
 };
 
 #endif /* SFQ_H_ */

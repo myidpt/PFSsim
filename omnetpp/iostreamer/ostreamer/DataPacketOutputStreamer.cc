@@ -23,13 +23,16 @@ DataPacketOutputStreamer::DataPacketOutputStreamer(OutputFiles * files)
 void DataPacketOutputStreamer::writePacket(const cPacket * cpacket) {
 	const gPacket * packet = (gPacket *)cpacket;
 	char buff[MaxLineLength];
-	snprintf(buff, MaxLineLength, "ID=%ld: APP=%d FID=%d SVR=%d\tS=%lf N=%lf",
-			packet->getID(),
+	snprintf(buff, MaxLineLength, "RiseTime=%lf $ID=%ld: APP=%d FID=%d START=%ld\tSIZE=%d\tSVR=%d\tS=%lf N=%lf",
+			packet->getRisetime(),
+	        packet->getID(),
 			packet->getApp(),
 			packet->getFileId(),
+			packet->getLowoffset(),
+			packet->getSize(),
 			packet->getDsID(),
 			SecToMS*(packet->getFinishtime() - packet->getDispatchtime()),
-			SecToMS*(packet->getReturntime() - packet->getFinishtime()));
+			SecToMS*(packet->getReturntime() - packet->getRisetime()));
 	int index = 0;
 	if(fileCount == 1) {
 		index = 0;

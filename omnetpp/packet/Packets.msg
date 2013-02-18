@@ -17,27 +17,47 @@ packet bPacket extends cPacket
 {
 //    @customize(true);
     long ID = 0;
-    long SubID = 0; // ID is not enough, currently SubID is only used on and below the VFS layer.
+    long SubID = 0;
+    // ID is not enough. currently SubID is used: 
+    // to mark the trace ID the packet is derived from at the client, and on and below the VFS layer.
     int app = 0;
     int size = 0; // The number of bytes of the access.
     int clientID = -1; // The ID of the sender client.
     int subReqNum = 0; // Record the number of subrequests. Only valid on a single module.
 }
 
+packet AppRequest extends bPacket
+{
+    int traceFileID = 0; // The ID of the trace file.
+    int fileID = 0; // The PFS file ID of this access.
+    long highoffset = 0; // The higher range of the offset.
+    long lowoffset = 0; // The offset of the access.
+    int read = 0; // write for 0 and read for 1.
+    long totalSize = 0; // The aggregate size of the total request.
+    int sync = 0;
+    
+    double starttime = 0;
+    double finishtime = 0;
+}
+
 packet qPacket extends bPacket
 {
     int fileId = -1;
+    int metadataServerID = 0;
     int dsNum = 0;
     int dsList[1024];
     long dsStripeSizes[1024];
+    
+    double risetime = 0; // The time the job is rised on the client.
+    double returntime = 0; // The time the result comes back to the client.
 }
 
 packet sPacket extends bPacket
 {
-    double tags[256];
-    int application = 0;
-    int length = 0;
-    bool forward;
+    double lengths[256];
+    int appNum;
+    int src = -1; // Source ID
+    int dst = -1; // Destination ID
 }
 
 packet gPacket extends bPacket
@@ -53,6 +73,7 @@ packet gPacket extends bPacket
     
     double qos_delay = 0; // The permitted delay of this job.
     
+    int clientID = -1; // The ID of the client this packet is from.
     int fileId = 0; // The file id of this access.
     long highoffset = 0; // The higher range of the offset.
     long lowoffset = 0; // The offset of the access.

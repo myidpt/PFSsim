@@ -15,9 +15,9 @@
 #define MAX_DS 64
 #define MAX_APP_PER_C		100
 #define TRC_MAXSIZE			0x3DE00000 // According to PVFS 0x40000000, 990MB
-//#define JOB_MAXSIZE		0xa00000 // According to PVFS 0xa00000, 10MB, one trace can have 99 JOBs
+#define JOB_MAXSIZE		    0xa00000 // According to PVFS 0xa00000, 10MB, one trace can have 99 JOBs
 //#define FLOW_MAXSIZE		0x40000 // According to PVFS 0x40000, 256KB
-#define JOB_MAXSIZE			0x40000 // According to PVFS 0x40000, 256KB
+//#define JOB_MAXSIZE		0x40000 // According to PVFS 0x40000, 256KB
 #define MAX_TIME 			360000 // The time limit on the simulation.
 
 #define CID_OFFSET			1000000 // The offset of the Client ID.
@@ -81,11 +81,8 @@
 #define SELF_PFS_R_DATA_LAST	34
 
 
-
-
-
-#define M_DIRTYPAGE			50
-#define M_CACHEDPAGE		51
+#define M_DIRTYPAGE			    50
+#define M_CACHEDPAGE		    51
 
 // Schedule mechanisms
 #define UNSCHEDULED 					-1
@@ -102,6 +99,7 @@
 #define SSFQ_ALG			5
 #define DSFQATB_ALG			6
 #define DSFQALB_ALG			7
+#define SFQRC_ALG           8
 
 #define DISKCACHE_TRIMCACHE // This will shrink the cache's doubly-linked list by merging adjacent elements in address. It improves performance.
 //#define DISKCACHE_CHECKHEALTH // This checks the cache doubly-linked list health every time; it down grades performance greatly.
@@ -111,6 +109,7 @@
 
 //#define APP_DEBUG
 //#define PFSCLIENT_DEBUG
+//#define MSG_CLIENT
 //#define LAYOUT_DEBUG
 //#define TRACE_DEBUG
 //#define MS_DEBUG
@@ -122,9 +121,10 @@
 //#define LFS_DEBUG
 //#define DISK_DEBUG
 //#define PROXY_DEBUG
-//#define SCH_DEBUG
 
+//#define SCH_DEBUG
 //#define SCH_PRINT
+
 //#define MONITOR_DIRTYPAGE
 //#define MONITOR_CACHEDPAGE
 //#define MONITOR_DISKACCESS

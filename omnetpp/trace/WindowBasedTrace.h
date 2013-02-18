@@ -32,7 +32,6 @@ private:
 
 	Layout * layout;
 
-	int maxWindowSize; // default 10MB. The aggregate size of all data chunks on all servers for one round.
 	long long dsoffsets[MAX_DS]; // The offset of the data stored on each data server.
 	long dataSizeInWindow[MAX_DS]; // The window for the packets waiting for reply.
 	// >0: unsent (the quantity indicates the data amount) / SW_SENT / SW_RECEIVED / SW_NULL

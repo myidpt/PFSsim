@@ -15,7 +15,7 @@
 
 #include "scheduler/SSFQ.h"
 
-SSFQ::SSFQ(int id, int deg, int totalc):SFQ(id, deg, totalc) {
+SSFQ::SSFQ(int id, int deg, int totalc, const char * param):SFQ(id, deg, totalc, param) {
 	maxSubReqSize = MAX_SUBREQ_SIZE; // The maximum size of sub-requests.
 	subReqNum = new map<long, int>();
 	reqList = new map<long, bPacket *>();
@@ -35,11 +35,12 @@ void SSFQ::pushWaitQ(bPacket * pkt){
 		int i = 0;
 		while(size > 0){
 			gPacket * subreq = new gPacket("SUBREQ", pkt->getKind());
-			subreq->setID(pkt->getID() * PID_OFFSET + i++);
+			subreq->setID(pkt->getID() * RID_OFFSET + i++);
 			subreq->setLowoffset(offset % LOWOFFSET_RANGE);
 			subreq->setHighoffset(offset / LOWOFFSET_RANGE);
 			subreq->setRead(gpkt->getRead());
 			subreq->setFileId(gpkt->getFileId());
+			subreq->setSubID(gpkt->getSubID());
 			subreq->setApp(gpkt->getApp());
 			subreq->setClientID(gpkt->getClientID());
 			subreq->setDsID(gpkt->getDsID());
@@ -56,7 +57,7 @@ void SSFQ::pushWaitQ(bPacket * pkt){
 		}
 	}else{
 		subReqNum->insert(std::pair<long, int>(pkt->getID(), -10)); // If the request is small in size, there's no sub-request.
-		pkt->setID(pkt->getID() * PID_OFFSET);
+		pkt->setID(pkt->getID() * RID_OFFSET);
 		SFQ::pushWaitQ(pkt);
 	}
 }
@@ -66,7 +67,7 @@ bPacket * SSFQ::popOsQ(long subreqid){
 	bPacket * subreq = SFQ::popOsQ(subreqid);
 	if(subreq == NULL)
 		return NULL;
-	long reqid = subreqid / PID_OFFSET;
+	long reqid = subreqid / RID_OFFSET;
 	map<long, int>::iterator it = subReqNum->find(reqid);
 	if(it == subReqNum->end()){ // Not found
 		PrintError::print("SSFQ - popOsQ", "Can not find the request with this ID.", reqid);
@@ -80,7 +81,7 @@ bPacket * SSFQ::popOsQ(long subreqid){
 		map<long, bPacket *>::iterator it2 = reqList->find(reqid);
 		reqList->erase(it2);
 		ret = it2->second;
-		ret->setID(ret->getID() / PID_OFFSET);
+		ret->setID(ret->getID() / RID_OFFSET);
 	}else{
 		delete subreq; // Delete the sub-request.
 		num --;

@@ -27,82 +27,132 @@ void Proxy::initialize(){
 	proxyID ++;
 
 	algorithm = par("algorithm").longValue();
+	const char * alg_param =par("alg_param").stringValue();
+	alg_prop_int = par("alg_prop_int").doubleValue(); // This is the time interval.
+	double alg_prop_wl = par("alg_prop_wl").doubleValue(); // This is the workload threshold.
 	degree = par("degree").longValue();
 	newjob_proc_time = par("newjob_proc_time").doubleValue();
 	finjob_proc_time = par("finjob_proc_time").doubleValue();
 	int numapps = par("numApps").longValue();
+	alg_timer = NULL;
 
+	cout << "Proxy #" << myID << " algorithm: ";
 	switch(algorithm){
 	case FIFO_ALG:
+		cout << "FIFO(" << degree << ")." << endl;
 		queue = new FIFO(myID, degree);
 		break;
 	case SFQ_ALG:
-		queue = new SFQ(myID, degree, numapps);
+		cout << "SFQ(" << degree << ")";
+		queue = new SFQ(myID, degree, numapps, alg_param);
 		break;
+	case DSFQA_ALG:
+		cout << "DSFQA(" << degree << ")";
+		queue = new DSFQA(myID, degree, numapps, alg_param);
+		break;
+	case DSFQD_ALG:
+		cout << "DSFQD(" << degree << ")";
+		queue = new DSFQD(myID, degree, numapps, alg_param);
+		break;
+	case DSFQF_ALG:
+		cout << "DSFQF(" << degree << ")";
+		queue = new DSFQF(myID, degree, numapps, alg_param);
+		break;
+	case DSFQATB_ALG:
+		cout << "DSFQA(" << degree << ")-TimeBased";
+		queue = new DSFQATB(myID, degree, numapps, alg_param);
+		alg_timer = new gPacket("ALG_TIMER");
+		alg_timer->setKind(ALG_TIMER);
+		scheduleAt((simtime_t)(SIMTIME_DBL(simTime()) + alg_prop_int), alg_timer);
+		break;
+	case DSFQALB_ALG:
+		cout << "DSFQA(" << degree << ")-LoadBased";
+		queue = new DSFQALB(myID, degree, numapps, alg_prop_wl, alg_param);
+		break;
+	case SFQRC_ALG:
+        cout << "SFQRC(" << degree << ")";
+        queue = new SFQRC(myID, degree, numapps, alg_param);
+        break;
 	default:
-		PrintError::print("DSproxy", "Undefined algorithm.");
+		PrintError::print("Proxy", "Undefined algorithm.");
 		deleteModule();
+		break;
 	}
 }
 
 /*
- * We map the packet kinds to the SELF event family for internal use:
- * JOB_DISP			SELF_JOB_DISP
- * JOB_DISP_LAST	SELF_JOB_DISP_LAST
- * JOB_FIN			SELF_JOB_FIN
- * JOB_FIN_LAST		SELF_JOB_FIN_LAST
- * JOB_REQ			SELF_JOB_REQ
- * JOB_RESP			SELF_JOB_RESP
- * They translated back in sendSafe().
+ * We map the packet kinds to the SELF event family for internal use.
  */
 
 void Proxy::handleMessage(cMessage * cmsg) {
+#ifdef MSG_PROXY
+	cout << "Proxy[" << myID << "] " << MessageKind::getMessageKindString(cmsg->getKind()) <<
+			" ID=" << ((bPacket *)cmsg)->getID() << endl;
+#endif
 	switch(cmsg->getKind()){
-	case JOB_REQ: // This one needs to be scheduled.
+	case PFS_R_REQ: // To be enqueued.
+	case PFS_W_REQ:
 		handleJobReq((gPacket *)cmsg);
 		break;
-	case SELF_JOB_REQ:
+
+	case SELF_PFS_R_REQ: // Enqueue here.
+	case SELF_PFS_W_REQ:
 		handleJobReq2((gPacket *)cmsg);
 		break;
 
-	case JOB_DISP: // No need to put in queue.
-	case JOB_DISP_LAST:
-		handleJobDisp((gPacket *)cmsg);
-		break;
-	case SELF_JOB_DISP:
-	case SELF_JOB_DISP_LAST:
-		sendSafe((gPacket *)cmsg);
+	case PFS_W_FIN: // To be dequeued.
+	case PFS_R_DATA_LAST:
+		handleReadLastWriteFin((gPacket *)cmsg);
 		break;
 
-	case JOB_RESP:
-	case JOB_FIN_LAST:
-		handleJobRespFinComp((gPacket *)cmsg);
-		break;
-	case SELF_JOB_FIN_LAST:
-	case SELF_JOB_RESP:
-		handleJobRespFinComp2((gPacket *)cmsg);
+	case SELF_PFS_W_FIN: // Dequeue here.
+	case SELF_PFS_R_DATA_LAST:
+		handleReadLastWriteFin2((gPacket *)cmsg);
 		break;
 
-	case JOB_FIN: // No need to go through the queue.
-		handleJobFin((gPacket *)cmsg);
+	case PFS_W_RESP:
+	case PFS_W_DATA: // No need to put in queue.
+	case PFS_W_DATA_LAST: // No need to put in queue or pop queue. The queue will be poped when PFS_W_FIN comes.
+	case PFS_R_DATA: // No need to go through the queue.
+		handleMinorReadWrite((gPacket *)cmsg);
 		break;
-	case SELF_JOB_FIN:
+
+	case SELF_PFS_W_RESP:
+	case SELF_PFS_W_DATA:
+	case SELF_PFS_W_DATA_LAST:
+	case SELF_PFS_R_DATA:
 		sendSafe((gPacket *)cmsg);
 		break;
 
 	case PROP_SCH: // inter-scheduler message, currently unused.
 		handleInterSchedulerPacket((sPacket *)cmsg);
 		break;
+
+	case ALG_TIMER: // Timer for the propagation interval.
+		handleAlgorithmTimer();
+		break;
+
+	default:
+		char sentence[50];
+		sprintf(sentence, "Unknown message type %d.", cmsg->getKind());
+		PrintError::print("Proxy", myID, sentence);
+		break;
 	}
 }
 
 void Proxy::handleJobReq(gPacket * gpkt){
-	gpkt->setInterceptiontime(SIMTIME_DBL(simTime()));
-	gpkt->setKind(SELF_JOB_REQ);
-#ifdef SCH_DEBUG
+#ifdef PROXY_DEBUG
 	cout << "[" << SIMTIME_DBL(simTime()) << "] Proxy #" << myID << ": handleJobReq ID=" << gpkt->getID() << endl;
 	fflush(stdout);
 #endif
+
+	gpkt->setInterceptiontime(SIMTIME_DBL(simTime()));
+	if (gpkt->getKind() == PFS_R_REQ) {
+		gpkt->setKind(SELF_PFS_R_REQ);
+	} else if (gpkt->getKind() == PFS_W_REQ) {
+		gpkt->setKind(SELF_PFS_W_REQ);
+	}
+
 	if(newjob_proc_time != 0){
 		scheduleAt((simtime_t)(SIMTIME_DBL(simTime()) + newjob_proc_time), gpkt);
 	} else {
@@ -110,23 +160,77 @@ void Proxy::handleJobReq(gPacket * gpkt){
 	}
 }
 
-void Proxy::handleJobReq2(gPacket * gpkt){
-	queue->pushWaitQ(gpkt);
+void Proxy::handleJobReq2(gPacket * gpkt) {
+    if (algorithm == SFQRC_ALG) {
+        queue->pushWaitQ(gpkt, SIMTIME_DBL(simTime())); // This algorithm requires the current time information.
+    } else {
+        queue->pushWaitQ(gpkt); // Push in the request.
+    }
+    if(algorithm == DSFQA_ALG || algorithm == DSFQALB_ALG) { // DSFQA packet propagation is triggered.
+		propagateSPackets();
+    }
 	scheduleJobs();
 }
 
-// JOB_DISP or JOB_DISP_LAST:
-// The packet does not go through the queue.
-void Proxy::handleJobDisp(gPacket * gpkt) { // from the client
-	gpkt->setInterceptiontime(SIMTIME_DBL(simTime()));
-	if(gpkt->getKind() == JOB_DISP)
-		gpkt->setKind(SELF_JOB_DISP);
-	else if(gpkt->getKind() == JOB_DISP_LAST)
-		gpkt->setKind(SELF_JOB_DISP_LAST);
+void Proxy::handleReadLastWriteFin(gPacket * gpkt) { // from the data server
+#ifdef PROXY_DEBUG
+	cout << "[" << SIMTIME_DBL(simTime()) << "] Proxy #" << myID << ": handleJobRespFinComp ID=" << gpkt->getID() << endl;
+	fflush(stdout);
+#endif
+	if (gpkt->getKind() == PFS_W_FIN) {
+		gpkt->setKind(SELF_PFS_W_FIN);
+	} else { // PFS_R_DATA_LAST
+		gpkt->setKind(SELF_PFS_R_DATA_LAST);
+	}
 
-#ifdef SCH_DEBUG
+	if(finjob_proc_time != 0){
+		scheduleAt((simtime_t)(SIMTIME_DBL(simTime()) + finjob_proc_time), gpkt);
+	} else {
+		handleReadLastWriteFin2(gpkt);
+	}
+}
+
+void Proxy::handleReadLastWriteFin2(gPacket * gpkt){
+#ifdef PROXY_DEBUG
+	cout << "[" << SIMTIME_DBL(simTime()) << "] Proxy #" << myID << ": handleJobRespFinComp2 ID=" << gpkt->getID() << endl;
+	fflush(stdout);
+#endif
+
+	int recordPacketID = gpkt->getID() / RID_OFFSET * RID_OFFSET;
+	// The recorded one is the request, which has the lowest ID among the serial of packets from one request.
+	gPacket * queuedpacket;
+    if (algorithm == SFQRC_ALG) {
+        queuedpacket = (gPacket *)queue->popOsQ(recordPacketID, SIMTIME_DBL(simTime()));
+    } else {
+        queuedpacket = (gPacket *)queue->popOsQ(recordPacketID);
+    }
+	delete queuedpacket; // Delete the record.
+
+	if(algorithm == DSFQF_ALG) { // DSFQA packet propagation is triggered.
+		propagateSPackets();
+	}
+
+	sendSafe(gpkt); // to the client
+	scheduleJobs();
+}
+
+// PFS_W_RESP, PFS_W_DATA or PFS_W_DATA_LAST, PFS_R_DATA:
+// The packet does not go through the queue.
+void Proxy::handleMinorReadWrite(gPacket * gpkt) { // from the client
+#ifdef PROXY_DEBUG
 	cout << "[" << SIMTIME_DBL(simTime()) << "] Proxy #" << myID << ": handleJobDisp ID=" << gpkt->getID() << endl;
 #endif
+	gpkt->setInterceptiontime(SIMTIME_DBL(simTime()));
+
+	if(gpkt->getKind() == PFS_W_RESP) {
+		gpkt->setKind(SELF_PFS_W_RESP);
+	} else if(gpkt->getKind() == PFS_W_DATA) {
+		gpkt->setKind(SELF_PFS_W_DATA);
+	} else if(gpkt->getKind() == PFS_W_DATA_LAST) {
+		gpkt->setKind(SELF_PFS_W_DATA_LAST);
+	} else {
+		gpkt->setKind(SELF_PFS_R_DATA);
+	}
 
 	if(newjob_proc_time != 0){
 		scheduleAt((simtime_t)(SIMTIME_DBL(simTime()) + newjob_proc_time), gpkt);
@@ -135,56 +239,33 @@ void Proxy::handleJobDisp(gPacket * gpkt) { // from the client
 	}
 }
 
-void Proxy::handleJobRespFinComp(gPacket * gpkt){ // from the data server
-#ifdef SCH_DEBUG
-	cout << "[" << SIMTIME_DBL(simTime()) << "] Proxy #" << myID << ": handleJobRespFinComp ID=" << gpkt->getID() << endl;
-	fflush(stdout);
+void Proxy::handleAlgorithmTimer(){
+#ifdef PROXY_DEBUG
+	cout << "[" << SIMTIME_DBL(simTime()) << "] Proxy #" << myID << ": handleAlgorithmTimer" << endl;
 #endif
-	if(gpkt->getKind() == JOB_RESP)
-		gpkt->setKind(SELF_JOB_RESP);
-	else if(gpkt->getKind() == JOB_FIN_LAST)
-		gpkt->setKind(SELF_JOB_FIN_LAST);
-
-	if(finjob_proc_time != 0){
-		scheduleAt((simtime_t)(SIMTIME_DBL(simTime()) + finjob_proc_time), gpkt);
-	} else {
-		handleJobRespFinComp2(gpkt);
+	if(algorithm != DSFQATB_ALG){
+		PrintError::print("Proxy", "handleAlgorithmTimer called when algorithm is not DSFQATB_ALG.", algorithm);
 	}
-}
-
-void Proxy::handleJobRespFinComp2(gPacket * gpkt){
-#ifdef SCH_DEBUG
-	cout << "[" << SIMTIME_DBL(simTime()) << "] Proxy #" << myID << ": handleJobRespFinComp2 ID=" << gpkt->getID() << endl;
-	fflush(stdout);
-#endif
-
-	if(gpkt->getKind() == SELF_JOB_RESP)
-		gpkt->setKind(JOB_RESP);
-	else if(gpkt->getKind() == SELF_JOB_FIN_LAST)
-		gpkt->setKind(JOB_FIN_LAST);
-
-	queue->popOsQ(gpkt->getID());
-	sendSafe(gpkt); // to the client
-
-	scheduleJobs();
-}
-
-void Proxy::handleJobFin(gPacket * gpkt){
-	gpkt->setKind(SELF_JOB_FIN);
-	if(finjob_proc_time != 0){
-		scheduleAt((simtime_t)(SIMTIME_DBL(simTime()) + finjob_proc_time), gpkt);
-	} else {
-		sendSafe(gpkt);
-	}
+		propagateSPackets();
+		scheduleAt((simtime_t)(SIMTIME_DBL(simTime()) + alg_prop_int), alg_timer);
 }
 
 void Proxy::scheduleJobs(){
 	gPacket * jobtodispatch = NULL;
+	gPacket * packetcopy = NULL;
 	while(1){
-		jobtodispatch = (gPacket *)queue->dispatchNext();
+	    if (algorithm == SFQRC_ALG) {
+            jobtodispatch = (gPacket *)queue->dispatchNext(SIMTIME_DBL(simTime()));
+	    } else {
+	        jobtodispatch = (gPacket *)queue->dispatchNext();
+	    }
+
 		if(jobtodispatch != NULL){
-			jobtodispatch->setScheduletime(SIMTIME_DBL(simTime()));
-			sendSafe(jobtodispatch);
+			if(algorithm == DSFQD_ALG) // DSFQA packet propagation is triggered.
+				propagateSPackets();
+			packetcopy = new gPacket(*jobtodispatch);
+			packetcopy->setScheduletime(SIMTIME_DBL(simTime()));
+			sendSafe(packetcopy);
 		}
 		else
 			break;
@@ -193,23 +274,35 @@ void Proxy::scheduleJobs(){
 
 void Proxy::sendSafe(gPacket * gpkt){
 	switch(gpkt->getKind()){
-	case SELF_JOB_DISP:
-		gpkt->setKind(JOB_DISP);
+	case SELF_PFS_W_REQ:
+		gpkt->setKind(PFS_W_REQ);
 		break;
-	case SELF_JOB_DISP_LAST:
-		gpkt->setKind(JOB_DISP_LAST);
+	case SELF_PFS_R_REQ:
+		gpkt->setKind(PFS_R_REQ);
 		break;
-	case SELF_JOB_FIN:
-		gpkt->setKind(JOB_FIN);
+	case SELF_PFS_W_RESP:
+		gpkt->setKind(PFS_W_RESP);
 		break;
-	case SELF_JOB_FIN_LAST:
-		gpkt->setKind(JOB_FIN_LAST);
+
+	case SELF_PFS_W_DATA:
+		gpkt->setKind(PFS_W_DATA);
 		break;
-	case SELF_JOB_REQ:
-		gpkt->setKind(JOB_REQ);
+	case SELF_PFS_W_DATA_LAST:
+		gpkt->setKind(PFS_W_DATA_LAST);
 		break;
-	case SELF_JOB_RESP:
-		gpkt->setKind(JOB_RESP);
+	case SELF_PFS_W_FIN:
+		gpkt->setKind(PFS_W_FIN);
+		break;
+
+	case SELF_PFS_R_DATA:
+		gpkt->setKind(PFS_R_DATA);
+		break;
+	case SELF_PFS_R_DATA_LAST:
+		gpkt->setKind(PFS_R_DATA_LAST);
+		break;
+
+	default:
+		PrintError::print("Proxy::sendSafe", "Undefined type ", gpkt->getKind());
 		break;
 	}
 
@@ -224,35 +317,43 @@ void Proxy::sendSafe(gPacket * gpkt){
 }
 
 void Proxy::handleInterSchedulerPacket(sPacket * spkt){
-#ifdef SCH_DEBUG
-	cout << "[" << SIMTIME_DBL(simTime()) << "] Scheduler #" << myID << ": Receive interscheduler packet. app="
-			<< spkt->getApp() << ", length=" << spkt->getLength() << endl;
+#ifdef PROXY_DEBUG
+	cout << "[" << SIMTIME_DBL(simTime()) << "] Scheduler #" << myID << ": Receive interscheduler packet. src="
+			<< spkt->getSrc() << endl;
 	fflush(stdout);
 #endif
-	if(algorithm != DSFQF_ALG && algorithm != DSFQA_ALG && algorithm != DSFQD_ALG){
-		PrintError::print("Proxy", "distributed scheduling algorithm not selected, calling handleInterSchedulerPacket is prohibited.");
+	if(algorithm != DSFQF_ALG && algorithm != DSFQA_ALG && algorithm != DSFQD_ALG
+			&& algorithm != DSFQATB_ALG && algorithm != DSFQALB_ALG){
+		PrintError::print("Proxy", "distributed scheduling algorithm not selected,"
+		        " calling handleInterSchedulerPacket is prohibited.");
 		return;
 	}
 	queue->receiveSPacket(spkt);
 	delete spkt;
 }
 
-void Proxy::propagateSPacket(sPacket * spkt){
-#ifdef SCH_DEBUG
-	cout << "[" << SIMTIME_DBL(simTime()) << "] Proxy #" << myID << ": send interProxy packet. app="
-			<< spkt->getApp() << ", length=" << spkt->getLength() << endl;
-	fflush(stdout);
+void Proxy::propagateSPackets(){
+	sPacket * spkt;
+	while((spkt = queue->propagateSPacket()) != NULL){
+#ifdef PROXY_DEBUG
+		cout << "[" << SIMTIME_DBL(simTime()) << "] Proxy #" << myID << ": send interProxy packet. src="
+			<< spkt->getSrc() << endl;
+		fflush(stdout);
 #endif
-	send(spkt, "schg$o");
+		spkt->setKind(PROP_SCH);
+		send(spkt, "schg$o");
+	}
 }
 
 void Proxy::finish(){
-#ifdef SCH_DEBUG
+#ifdef PROXY_DEBUG
 	cout << "[" << SIMTIME_DBL(simTime()) << "] Proxy #" << myID << ": finish." << endl;
 	fflush(stdout);
 #endif
 	if(queue != NULL)
 		delete queue;
+	if(alg_timer != NULL)
+		cancelAndDelete(alg_timer);
 }
 
 Proxy::~Proxy() {

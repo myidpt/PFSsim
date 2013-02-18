@@ -37,14 +37,16 @@ public:
 	void initialize();
 	void handleMessage(cMessage * cmsg);
 
-	inline void handle_JobReq(gPacket *);
-	inline void send_JobResp(gPacket *);
-	inline void handle_JobDisp(gPacket *);
-	inline void enqueue_dispatch_VFSReqs(gPacket *);
-	inline void handle_VFSResp(gPacket *);
+	inline void handleReadWriteReq(gPacket * gpkt);
+	inline void handleSelfWriteReq(gPacket * gpkt);
+	inline void handleWriteDataPacket(gPacket * gpkt);
+
+	inline void sendWriteResp(gPacket * gpkt);
+	inline void enqueue_dispatch_VFSReqs(gPacket * gpkt);
+	inline void handle_VFSResp(gPacket * gpkt);
 	inline void dispatch_VFSReqs();
-	inline void sendToVFS(gPacket *);
-	inline void sendToEth(gPacket *);
+	inline void sendToVFS(gPacket * gpkt);
+	inline void sendToEth(gPacket * gpkt);
 	void finish();
 	virtual ~DSD_M();
 };

@@ -36,7 +36,7 @@ void WindowBasedTrace::initialize(int tid, double time, int fid, long long off,
 	applicationID = appid;
 	sync = syn;
 
-	unProcessedSize = s;
+	unProcessedSize = s; // Initialize the unprocessed size to be the total size.
 }
 
 void WindowBasedTrace::initialize(const AppRequest * request) {
@@ -57,6 +57,9 @@ void WindowBasedTrace::initialize(const AppRequest * request) {
 // Check if there are still unsent packets in the window.
 // If yes, return it, if no, return NULL.
 gPacket * WindowBasedTrace::getNextgPacketFromWindow(){
+#ifdef TRACE_DEBUG
+    cout << "WindowBasedTrace-getNextgPacketFromWindow: " << endl;
+#endif
 	if (layout == NULL) {
 		PrintError::print("Trace", "The data layout is unset.");
 		return NULL;
@@ -64,8 +67,7 @@ gPacket * WindowBasedTrace::getNextgPacketFromWindow(){
 	gPacket * packet = NULL;
 	for(int i = 0; i < layout->getServerNum(); i ++){
 		if(dataSizeInWindow[i] > 0){ // Unsent
-			packet = new gPacket("JOB_REQ");
-			packet->setKind(JOB_REQ);
+			packet = new gPacket();
 			packet->setLowoffset(dsoffsets[i] % LOWOFFSET_RANGE);
 			packet->setHighoffset(dsoffsets[i] / LOWOFFSET_RANGE);
 			packet->setSize(dataSizeInWindow[i]);
@@ -77,6 +79,9 @@ gPacket * WindowBasedTrace::getNextgPacketFromWindow(){
 			packet->setApp(applicationID);
 			packet->setDsID(layout->getServerID(i));
 			dataSizeInWindow[i] = SW_SENT;
+#ifdef TRACE_DEBUG
+    cout << "packet size=" << packet->getSize() << endl;
+#endif
 			return packet;
 		}
 	}
@@ -97,12 +102,15 @@ bool WindowBasedTrace::openNewWindow(){
 		return false;
 	}
 
+#ifdef TRACE_DEBUG
+    cout << "WindowBasedTrace-openNewWindow: unProcessedSize=" << unProcessedSize << endl;
+#endif
 	// Current window is all done (sending and receiving), and next window exists.
 	// Do next window.
 	// Set up the current total window size, i.e., aggregateSize.
-	if(maxWindowSize < unProcessedSize){
-		aggregateSize = maxWindowSize;
-		unProcessedSize -= maxWindowSize;
+	if(unProcessedSize > MAX_WINDOW_SIZE){
+		aggregateSize = MAX_WINDOW_SIZE;
+		unProcessedSize -= MAX_WINDOW_SIZE;
 	}else{
 		aggregateSize = unProcessedSize;
 		unProcessedSize = 0;
@@ -111,13 +119,14 @@ bool WindowBasedTrace::openNewWindow(){
 	// Set up the request size for each server.
 
 	// Init
-	for(int i = 0; i < layout->getServerNum(); i ++)
-		dataSizeInWindow[i] = SW_NULL;
+	for(int i = 0; i < layout->getServerNum(); i ++) {
+		dataSizeInWindow[i] = SW_NULL; // Set 0.
+	}
 
 	long leftAggSize = aggregateSize;
-	long tmpsize;
+	long sizeInc; // Increase the size one by one.
 	bool firsttime = true;
-	for(int i = offset_start_server;; i ++){
+	for(int i = offset_start_server;; i ++) {
 		if(i == layout->getServerNum())
 			i = 0;
 
@@ -126,20 +135,27 @@ bool WindowBasedTrace::openNewWindow(){
 			break;
 		}
 
-		tmpsize = layout->getServerStripeSize(i);
+		sizeInc = layout->getServerStripeSize(i);
 		if(i == offset_start_server && firsttime){
-			tmpsize -= offset_start_position;
+			sizeInc -= offset_start_position;
+			// Understand it with setLayout method. Reduce the access size with the offset inside the access.
 			firsttime = false;
 		}
 
-		if(tmpsize < leftAggSize){
-			dataSizeInWindow[i] += tmpsize;
-			leftAggSize -= tmpsize;
-		}else{
+		if(sizeInc < leftAggSize){
+			dataSizeInWindow[i] += sizeInc;
+			leftAggSize -= sizeInc;
+		} else {
 			dataSizeInWindow[i] += leftAggSize;
 			leftAggSize = 0;
 		}
 	}
+
+#ifdef TRACE_DEBUG
+	for (int i = 0; i < layout->getServerNum(); i ++) {
+	   cout << "dataSizeInWindow[" << i << "]=" << dataSizeInWindow[i] << endl;
+	}
+#endif
 	return true;
 }
 
@@ -222,10 +238,13 @@ void WindowBasedTrace::setLayout(Layout * lo) {
 			if(remainder <= layout->getServerStripeSize(i)){ // Starts from here
 				offset_start_server = i;
 				offset_start_position = remainder;
+				// The start position inside the first data server.
+				// This first access size should be reduced by this offset size.
 				dsoffsets[i] += remainder;
+				// The offset for the first data server access is increased.
 				remainder = -1;
 			}
-			else{
+			else{ // Some data servers are skipped for the first round.
 				dsoffsets[i] += (long long)(layout->getServerStripeSize(i));
 				remainder -= (long long)(layout->getServerStripeSize(i));
 			}
@@ -233,10 +252,10 @@ void WindowBasedTrace::setLayout(Layout * lo) {
 	}
 
 	// Initialize the data chunk size for each data server with NULL first.
-	maxWindowSize = 0;
+//	maxWindowSize = 0;
 	for(int i = 0; i < layout->getServerNum(); i ++) {
 		dataSizeInWindow[i] = SW_NULL;
-		maxWindowSize += layout->getServerStripeSize(i);
+//		maxWindowSize += layout->getServerStripeSize(i);
 	}
 
 	// Set the first window.

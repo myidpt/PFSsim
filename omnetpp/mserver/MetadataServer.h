@@ -13,11 +13,8 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-#ifndef __V0_21_METADATASERVER_H_
-#define __V0_21_METADATASERVER_H_
-
 #include <omnetpp.h>
-#include <mserver/PVFS2MetadataServerStrategy.h>
+#include <mserver/strategy/PVFS2MetadataServerStrategy.h>
 
 class MetadataServer : public cSimpleModule
 {
@@ -40,5 +37,3 @@ protected:
 	inline void sendSafe(cMessage *);
 	void finish();
 };
-
-#endif

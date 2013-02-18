@@ -33,13 +33,17 @@ protected:
 		long orig_ub; // upper bound for the original request
 		long hoff;
 		int fid;
+		int subID;
 		int app;
 		int read;
 		int decision;
 		int cid;
+		int inQueueID;
 	} info[MAX_DSD_OSREQS]; // Keeps the size and offset information of the "new" request, based on the object size.
 	bool oslist[MAX_APP]; // Keeps track of the number of outstanding subrequests belonging to one application.
+	int packet_size_limit;
 	IQueue * subreqQ;
+	IQueue * cachedSubreqsBeforeReturn;
 	// Request Size/offset may be at this layer. Records the size of the original request when it returns.
 public:
 	PVFS2DSD(int, int, int, int);

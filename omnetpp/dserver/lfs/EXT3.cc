@@ -98,7 +98,8 @@ BlkRequest * EXT3::dispatchNext(){
     if(extindex < 0){
         return NULL;
     }else if(extindex == extentryNum[fid]){ // Not allocated yet.
-    	  printf("EXT3: dispatchNext - extent not allocated yet - extlist[%d][%d]\n", fid, extindex);
+//    	  cout << "EXT3: dispatchNext - extent not allocated yet - FID["; // TODO: know file size, and return EOF if ra trying to read.
+//    	  cout << fid << "] start[" << br->start << "], end[" << br->end << "]." << endl;
 #ifdef LFS_DEBUG
             printf("EXT3: dispatchNext - extent not allocated yet - extlist[%d][%d]\n", fid, extindex);
             fflush(stdout);

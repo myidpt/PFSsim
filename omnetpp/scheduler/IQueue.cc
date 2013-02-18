@@ -18,7 +18,60 @@
 IQueue::IQueue(int id, int deg){
 	myID = id;
 	degree = deg;
+	appNum = 0;
 	srand((unsigned)time(0));
+}
+
+void IQueue::pushWaitQ(bPacket * pkt) {
+    PrintError::print("IQueue", 0, "pushWaitQ(bPacket *) is not defined.");
+}
+
+void IQueue::pushWaitQ(bPacket * packet, double time) {
+    PrintError::print("IQueue", 0, "pushWaitQ(bPacket *, double) is not defined.");
+}
+
+bPacket * IQueue::dispatchNext() {
+    PrintError::print("SFQRC", 0, "dispatchNext() is not defined.");
+    return NULL;
+}
+
+bPacket * IQueue::dispatchNext(double time) {
+    PrintError::print("IQueue", 0, "dispatchNext(double) is not defined.");
+    return NULL;
+}
+
+bPacket * IQueue::popOsQ(long id) {
+    PrintError::print("IQueue", 0, "popOsQ(long) is not defined.");
+    return NULL;
+}
+
+bPacket * IQueue::popOsQ(long id, double time) {
+    PrintError::print("IQueue", 0, "popOsQ(long, double) is not defined.");
+    return NULL;
+}
+
+bPacket * IQueue::popOsQ(long id, long subid) {
+    PrintError::print("IQueue", 0, "popOsQ(long, long) is not defined.");
+    return NULL;
+}
+
+bPacket * IQueue::popOsQ(long id, long subid, double time) {
+    PrintError::print("IQueue", 0, "popOsQ(long, long, double) is not defined.");
+    return NULL;
+}
+
+bool IQueue::isEmpty() {
+    PrintError::print("IQueue", 0, "isEmpty() is not defined.");
+    return true;
+}
+
+sPacket * IQueue::propagateSPacket() {
+    PrintError::print("IQueue", 0, "propagateSPacket() is not defined.");
+    return NULL;
+}
+
+void IQueue::receiveSPacket(sPacket * pkt) {
+    PrintError::print("IQueue", 0, "receiveSPacket(sPacket *) is not defined.");
 }
 
 IQueue::~IQueue(){

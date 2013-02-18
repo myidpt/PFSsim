@@ -1,17 +1,7 @@
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-// 
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see http://www.gnu.org/licenses/.
-// 
+/*
+ * Author: Yonggang Liu
+ * The PFSClient class simulates the PFS client module.
+ */
 
 #include "PFSClient.h"
 
@@ -19,14 +9,20 @@ Define_Module(PFSClient);
 
 int PFSClient::idInit = 0;
 
+/*
+ * Initialize the ID of this module.
+ */
 PFSClient::PFSClient() {
-
 	dataPacketOutput = NULL;
 	metadataPacketOutput = NULL;
-
 	myID = idInit ++;
 }
 
+/*
+ * Take the parameters from the ini file to:
+ * Create the output streamers, including the data packet records and the metadata packet records.
+ * Initialize the PFSClientStrategy.
+ */
 void PFSClient::initialize() {
 	maxTransferWindowSize = par("max_transfer_window_size").longValue();
 	dataPacketProcessTime = par("data_packet_process_time").doubleValue();
@@ -79,6 +75,15 @@ void PFSClient::initialize() {
 		PrintError::print("PFSClient::initialize", errorMessage);
 	}
 }
+
+/*
+ *                TRACE_REQ                LAYOUT_REQ
+ * Application <-------------> PFSClient <-------------> MetadataServer
+ *                TRACE_RESP               LAYOUT_RESP
+ *                                           PFS_XXX
+ *                                       <-------------> DataServer
+ *                                           PFS_XXX
+ */
 void PFSClient::handleMessage(cMessage * message) {
 #ifdef MSG_CLIENT
 	cout << "Client[" << myID << "] " << MessageKind::getMessageKindString(message->getKind())
@@ -119,46 +124,73 @@ void PFSClient::handleMessage(cMessage * message) {
 	}
 }
 
-
+/*
+ * Pass the AppRequest to the PFSClientStrategy.
+ * Pass the result packets to the processPacketList to schedule/send them.
+ */
 void PFSClient::handleAppRequest(AppRequest * request) {
 	vector<cPacket *> * packetlist = pfsClientStrategy->handleNewTrace(request);
 	processPacketList(packetlist);
 }
 
+/*
+ * Pass the DataPacketResponse to the PFSClientStrategy.
+ * Pass the result packets to the processPacketList to schedule/send them.
+ */
 void PFSClient::handleDataPacketResponse(gPacket * packet) {
 	packet->setReturntime(SIMTIME_DBL(simTime()));
 	if (dataPacketOutput != NULL) {
 		dataPacketOutput->writePacket(packet);
 	}
-	vector<cPacket *> * packetlist = pfsClientStrategy->handleDataPacketReply(packet);
+	vector<cPacket *> * packetlist = pfsClientStrategy->handleDataPacketResponse(packet);
 	processPacketList(packetlist);
 }
 
+/*
+ * Pass the MetadataPacketResponse to the PFSClientStrategy.
+ * Pass the result packets to the processPacketList to schedule/send them.
+ */
 void PFSClient::handleMetadataPacketResponse(qPacket * packet) {
 	packet->setReturntime(SIMTIME_DBL(simTime()));
 	if (metadataPacketOutput != NULL) {
 		metadataPacketOutput->writePacket(packet);
 	}
-	vector<cPacket *> * packetlist = pfsClientStrategy->handleMetadataPacketReply(packet);
+	vector<cPacket *> * packetlist = pfsClientStrategy->handleMetadataPacketResponse(packet);
 	processPacketList(packetlist);
 }
 
+/*
+ * Send the DataPacketRequest to Ethernet.
+ */
 void PFSClient::sendDataPacketRequest(gPacket * packet) {
 	sendToEth(packet);
 }
 
+/*
+ * Send the MetadataPacketRequest to Ethernet.
+ */
 void PFSClient::sendMetadataPacketRequest(qPacket * packet) {
 	sendToEth(packet);
 }
 
+/*
+ * Send the AppResponse to Application.
+ */
 void PFSClient::sendAppResponse(AppRequest * request) {
 	sendToApp(request);
 }
 
+/*
+ * Send the AppResponse to Application, because the connection between PFSClient and Application is ideal,
+ * there's no need to wait for connection free.
+ */
 void PFSClient::sendToApp(AppRequest * request){
 	send(request, "app$o");
 }
 
+/*
+ * Send a packet to Ethernet.
+ */
 void PFSClient::sendToEth(cPacket * packet){
 	cChannel * cch = gate("eth$o")->getTransmissionChannel();
 	if(cch->isBusy())
@@ -167,13 +199,17 @@ void PFSClient::sendToEth(cPacket * packet){
 		send(packet, "eth$o");
 }
 
+/*
+ * This method iterates all the cPackets in the vector parameter, and send them according to the right channel.
+ */
 void PFSClient::processPacketList(vector<cPacket *> * list) {
 	vector<cPacket *>::iterator it;
 	double dataPacketRiseTime = SIMTIME_DBL(simTime());
 	double metadataPacketRiseTime = SIMTIME_DBL(simTime());
 	for (it = list->begin(); it != list->end(); it ++) {
 #ifdef PFSCLIENT_DEBUG
-	cout << "PFSClient-" << myID << "::processPacketList packetID=" << ((bPacket *)(*it))->getID() << " ";
+	cout << "PFSClient-" << myID << "::processPacketList packetID=" << ((bPacket *)(*it))->getID()
+	        << ", size=" << ((bPacket *)(*it))->getSize() << " ";
 #endif
 		switch ((*it)->getKind()) {
 		case TRACE_RESP:
@@ -227,11 +263,15 @@ void PFSClient::processPacketList(vector<cPacket *> * list) {
 
 		default:
 			PrintError::print("PFSClient::processPacketList", "Unknown message type: ", (*it)->getKind());
+			break;
 		}
 	}
 	delete list;
 }
 
+/*
+ * Clean the streamers' memory allocation.
+ */
 void PFSClient::finish() {
 	if(dataPacketOutput != NULL) {
 		delete dataPacketOutput;
