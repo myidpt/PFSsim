@@ -1,0 +1,270 @@
+diff -urN disksim-4.0/diskmodel/layout_g1.c disksim-4.0.x86_64/diskmodel/layout_g1.c
+--- disksim-4.0/diskmodel/layout_g1.c 2009-12-29 20:56:51.141949420 +0900
++++ disksim-4.0.x86_64/diskmodel/layout_g1.c 2009-12-29 19:46:03.834085354 +0900
+@@ -1939,10 +1939,10 @@
+      struct dm_layout_zone *result)
+ {
+   struct dm_layout_g1 *l = (struct dm_layout_g1 *)d->layout;
+-  struct dm_layout_g1_band *z;
++  struct dm_layout_g1_band *z = calloc(sizeof(struct dm_layout_g1_band), 1);
+ 
+   // check args  
+-  if(z == 0) { return -1; }
++  if(z == NULL) { return -1; }
+   if(n < 0 || n >= l->bands_len) { return -1; }
+ 
+   z = &l->bands[n];
+diff -urN disksim-4.0/diskmodel/layout_g2.c disksim-4.0.x86_64/diskmodel/layout_g2.c
+--- disksim-4.0/diskmodel/layout_g2.c 2007-01-09 13:58:48.000000000 +0900
++++ disksim-4.0.x86_64/diskmodel/layout_g2.c 2009-12-29 19:46:03.835085497 +0900
+@@ -248,13 +248,13 @@
+ 
+   // return st for the nearest (lower) zone if this cyl is unmapped
+   while(!(z = find_zone_pbn(d, &p2)) && p2.cyl >= 0) { p2.cyl--; }
+-  ddbg_assert(z);
++  ddbg_assert(z != NULL);
+ 
+   return z->st;
+ }
+ 
+ 
+-static void
++static dm_ptol_result_t
+ track_boundaries(struct dm_disk_if *d,
+    struct dm_pbn *p,
+    int *l1,
+@@ -283,6 +283,7 @@
+       *l2 = d->layout->dm_translate_ptol(d, &p2, remapsector);
+     } while((*l2 == DM_NX) && p2.sector);
+   }
++  return DM_OK;
+ }
+ 
+ static dm_angle_t
+diff -urN disksim-4.0/dixtrac/.paths disksim-4.0.x86_64/dixtrac/.paths
+--- disksim-4.0/dixtrac/.paths 2009-12-29 20:57:46.518830693 +0900
++++ disksim-4.0.x86_64/dixtrac/.paths 2009-12-29 19:46:22.429960003 +0900
+@@ -39,3 +39,10 @@
+ export MEMSMODEL_CFLAGS=-I$(MEMSMODEL_INCL)
+ export MEMSMODEL_LDPATH=$(MEMSMODEL_PREFIX)/lib
+ export MEMSMODEL_LDFLAGS=-L$(MEMSMODEL_LDPATH) -lmemsmodel
++
++# path to ssdmodel
++export SSDMODEL_PREFIX=../ssdmodel
++export SSDMODEL_INCL=$(SSDMODEL_PREFIX)/include
++export SSDMODEL_CFLAGS=-I$(SSDMODEL_INCL)
++export SSDMODEL_LDPATH=$(SSDMODEL_PREFIX)/lib
++export SSDMODEL_LDFLAGS=-L$(SSDMODEL_LDPATH) -lssdmodel
+diff -urN disksim-4.0/dixtrac/Makefile disksim-4.0.x86_64/dixtrac/Makefile
+--- disksim-4.0/dixtrac/Makefile 2008-05-15 15:37:34.000000000 +0900
++++ disksim-4.0.x86_64/dixtrac/Makefile 2009-12-29 20:17:39.857941323 +0900
+@@ -57,13 +57,15 @@
+  $(LIBDISKSIM_LDFLAGS) \
+  $(MEMSMODEL_LDFLAGS) \
+  $(DISKMODEL_LDFLAGS) \
++ $(SSDMODEL_LDFLAGS) \
+  $(LIBPARAM_LDFLAGS) \
+  $(LIBDDBG_LDFLAGS) \
+  $(ST_LDFLAGS)
+ 
+ CFLAGS   = -Wall -g -MD -I. $(DEFINES) -I$(STHREADS) $(DMINCLUDES) \
+  $(LIBDISKSIM_CFLAGS) \
+- $(DISKMODEL_CFLAGS) $(LIBPARAM_CFLAGS) $(LIBDDBG_CFLAGS) 
++ $(DISKMODEL_CFLAGS) $(LIBPARAM_CFLAGS) $(LIBDDBG_CFLAGS) \
++ $(SSDMODEL_CFLAGS)
+ 
+ 
+ all: all-redirect
+diff -urN disksim-4.0/libparam/myutil.c disksim-4.0.x86_64/libparam/myutil.c
+--- disksim-4.0/libparam/myutil.c 2008-05-12 07:09:29.000000000 +0900
++++ disksim-4.0.x86_64/libparam/myutil.c 2009-12-29 20:23:44.199835151 +0900
+@@ -150,7 +150,7 @@
+ {
+   struct lp_param *result = calloc(1, sizeof(struct lp_param));
+   result->source_file = source;
+-  result->name = name;
++  result->name = strdup(name);
+   result->v = v;
+   
+ 
+diff -urN disksim-4.0/libparam/util.c disksim-4.0.x86_64/libparam/util.c
+--- disksim-4.0/libparam/util.c 2009-12-29 20:56:51.143862773 +0900
++++ disksim-4.0.x86_64/libparam/util.c 2009-12-29 20:34:08.735171314 +0900
+@@ -47,7 +47,7 @@
+ 
+ #include 
+ 
+-//#include 
++#include 
+ 
+ #include "libparam.h"
+ #include "bitvector.h"
+@@ -941,12 +941,15 @@
+       (*b)[c] = p;
+       break;
+     }
++    printf("%d: name = %s\n", c, (*b)[c]->name);
+   }
+-  if(c == *plen) {
++  fflush(stdout);
++  if(c == *plen) { // BONK
+     /* didn't find a free slot -- double the array */
+     int newlen = 2 * (*plen) + 1;
+-    (*b) = realloc((*b), newlen * sizeof(int *));
+-    bzero((int *)(*b) + *plen, ((*plen) + 1) * sizeof(int*));
++    struct lp_param **new = calloc(newlen, sizeof(struct lp_param *));
++    memcpy(new, *b, (*plen) * sizeof(struct lp_param *));
++    (*b) = new;
+     (*b)[(*plen)] = p;
+     *plen = newlen;
+   }
+@@ -986,7 +989,7 @@
+ 
+   for(c = 0; c < lp_max_mod; c++) {
+ 
+-    lp_typetbl[c] = malloc(sizeof(struct lp_subtype));
++    lp_typetbl[c] = calloc(sizeof(struct lp_subtype),1);
+     bzero(lp_typetbl[c], sizeof(struct lp_subtype));
+     lp_typetbl[c]->sub = strdup(lp_modules[c]->name);
+   }
+@@ -1395,20 +1398,22 @@
+   int i;
+   
+ #ifndef _WIN32
+-  if(name[0] == '/')
++  if(name[0] == '/'){
+     if(stat(name, &s))
+       goto fail;
+     else
+       goto succ;
++  }
+ 
+   snprintf(cand, LP_PATH_MAX, "%s/%s", cwd, name);
+   
+ #else
+-  if(name[0] == '\\')
++  if(name[0] == '\\'){
+     if(stat(name, &s))
+       goto fail;
+     else
+       goto succ;
++  }
+ 
+   if (strcmp(cwd, "") == 0)
+       cwd = ".";
+diff -urN disksim-4.0/src/disksim_device.c disksim-4.0.x86_64/src/disksim_device.c
+--- disksim-4.0/src/disksim_device.c 2009-12-29 20:56:51.145831412 +0900
++++ disksim-4.0.x86_64/src/disksim_device.c 2009-12-29 19:46:03.836085835 +0900
+@@ -143,32 +143,24 @@
+   /* note that numdisks must be equal to diskinfo->disks_len */
+   newlen = numdevices ? (2 * numdevices) : 2;
+   zerocnt = (newlen == 2) ? 2 : (newlen/2);
+-  disksim->deviceinfo->devicenames = 
+-    realloc(disksim->deviceinfo->devicenames, newlen * sizeof(char *));
+-  bzero(disksim->deviceinfo->devicenames + c, zerocnt * sizeof(char *));
+-
+-  devicenos = realloc(devicenos, newlen*sizeof(int));
+-#ifndef WIN32
+-  bzero(devicenos + c, zerocnt * sizeof(int));
+-#else
+-  bzero(devicenos + c, zerocnt * sizeof(*(devicenos)));
+-#endif
+-
+-  devicetypes = realloc(devicetypes, newlen*sizeof(int));
+-#ifndef WIN32
+-  bzero(devicetypes + c, zerocnt * sizeof(int));
+-#else
+-  bzero(devicetypes + c, zerocnt * sizeof(*(devicetypes)));
+-#endif
+-
+-  disksim->deviceinfo->devices = realloc(disksim->deviceinfo->devices, 
+-      newlen*sizeof(int));
+-#ifndef WIN32
+-  bzero(disksim->deviceinfo->devices + c, zerocnt * sizeof(int));
+-#else
+-  bzero(disksim->deviceinfo->devices + c, zerocnt * sizeof(*(disksim->deviceinfo->devices)));
+-#endif
+ 
++  char **tmpdevname = calloc(newlen, sizeof(char *));
++  int *newdevnos    = calloc(newlen, sizeof(int));
++  int *newdevtypes  = calloc(newlen, sizeof(int));
++  struct deviceheader **newdevs = calloc(newlen, sizeof(struct deviceheader *));
++
++  if (numdevices){
++    memcpy(tmpdevname, disksim->deviceinfo->devicenames, numdevices * sizeof(char*));
++    memcpy(newdevnos, devicenos, numdevices * sizeof(int));
++    memcpy(newdevtypes, devicetypes, numdevices * sizeof(int));
++    memcpy(newdevs, disksim->deviceinfo->devices,
++    numdevices * sizeof(struct deviceheader *));
++  }
++
++  disksim->deviceinfo->devicenames = tmpdevname;
++  devicenos = newdevnos;
++  devicetypes = newdevtypes;
++  disksim->deviceinfo->devices = newdevs;
+   disksim->deviceinfo->devs_len = newlen;
+ 
+  foundslot:
+diff -urN disksim-4.0/src/disksim_global.h disksim-4.0.x86_64/src/disksim_global.h
+--- disksim-4.0/src/disksim_global.h 2009-12-29 20:56:51.157895353 +0900
++++ disksim-4.0.x86_64/src/disksim_global.h 2009-12-29 19:46:03.836085835 +0900
+@@ -253,7 +253,7 @@
+    int    temp;
+ } foo;
+ 
+-#define DISKSIM_EVENT_SIZE 128
++#define DISKSIM_EVENT_SIZE 200
+ #define DISKSIM_EVENT_SPACESIZE (DISKSIM_EVENT_SIZE - sizeof(struct foo))
+ 
+ typedef struct ev {
+diff -urN disksim-4.0/src/disksim_iosim.c disksim-4.0.x86_64/src/disksim_iosim.c
+--- disksim-4.0/src/disksim_iosim.c 2009-12-29 20:56:51.157895353 +0900
++++ disksim-4.0.x86_64/src/disksim_iosim.c 2009-12-29 20:34:30.740046410 +0900
+@@ -353,10 +353,7 @@
+    slotpath->byte[depth] = (inslotno & 0x0F) | (outslotno << 4);
+ }
+ 
+-
+-
+-
+-static int iosim_load_map(struct lp_block *b, int n) {
++static int iosim_load_map(struct lp_block *b, int64_t n) {
+   int c;
+   int i = 0;
+   char *s = 0; 
+diff -urN disksim-4.0/ssdmodel/include/ssdmodel/ssd.h disksim-4.0.x86_64/ssdmodel/include/ssdmodel/ssd.h
+--- disksim-4.0/ssdmodel/include/ssdmodel/ssd.h 2008-09-12 14:20:00.000000000 +0900
++++ disksim-4.0.x86_64/ssdmodel/include/ssdmodel/ssd.h 2009-12-29 20:24:10.100271314 +0900
+@@ -127,7 +127,7 @@
+     int *lba_table;                 // a table mapping the lba to the physical pages
+                                     // on the chip.
+ 
+-    char *free_blocks;              // each bit indicates whether a block in the
++    unsigned char *free_blocks;              // each bit indicates whether a block in the
+                                     // ssd_element is free or in use. number of bits
+                                     // in free_blocks is given by
+                                     // (struct ssd*)->params.blocks_per_element
+diff -urN disksim-4.0/ssdmodel/ssd.h disksim-4.0.x86_64/ssdmodel/ssd.h
+--- disksim-4.0/ssdmodel/ssd.h 2008-08-14 19:05:52.000000000 +0900
++++ disksim-4.0.x86_64/ssdmodel/ssd.h 2009-12-29 19:46:03.836085835 +0900
+@@ -127,7 +127,7 @@
+     int *lba_table;                 // a table mapping the lba to the physical pages
+                                     // on the chip.
+ 
+-    char *free_blocks;              // each bit indicates whether a block in the
++    unsigned char *free_blocks;              // each bit indicates whether a block in the
+                                     // ssd_element is free or in use. number of bits
+                                     // in free_blocks is given by
+                                     // (struct ssd*)->params.blocks_per_element
+diff -urN disksim-4.0/ssdmodel/ssd_init.c disksim-4.0.x86_64/ssdmodel/ssd_init.c
+--- disksim-4.0/ssdmodel/ssd_init.c 2008-08-16 14:10:34.000000000 +0900
++++ disksim-4.0.x86_64/ssdmodel/ssd_init.c 2009-12-29 20:34:43.724920839 +0900
+@@ -445,7 +445,7 @@
+ 
+ void ssd_initialize (void)
+ {
+-    static print1 = 1;
++//    static print1 = 1;
+    int i, j;
+ 
+    if (disksim->ssdinfo == NULL) {

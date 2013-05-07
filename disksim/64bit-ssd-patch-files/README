@@ -1,0 +1,24 @@
+|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+||||||||||||||Steps to get disksim with dixtrac working for a 64bit machine||||||||||||||
+||||||||||||||          with the SSD patch from Microsoft		   ||||||||||||||
+|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+1) Download Disksim-4.0-with-dixtrac for x86_64 from the CMU website
+
+2) Download the SSD drive addon from Microsoft research
+
+3) Extract both tarballs
+
+4) Copy the folder ssdmodel from the ssd addon into the root directory of disksim-4.0
+
+5) Copy this folder (64bit-ssd-patches) into the root directory of disksim-4.0
+
+6) In this folder make sure your shell is bash or a derivative and run fix-it-all.sh
+
+7) Rejoice! 
+
+8) Type make at the root of disksim-4.0
+
+9) Validate everything built properly via the runvalid scripts in /valid and ssdmodel/valid
+
+10) Done and done
