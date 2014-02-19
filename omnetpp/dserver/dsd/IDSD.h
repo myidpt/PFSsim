@@ -15,17 +15,18 @@
 
 #ifndef IDSD_H_
 #define IDSD_H_
+
 #include "General.h"
+#include "IQueue.h"
 
 class IDSD {
 protected:
 	int myID;
 	int degree;
-	int obj_size;
-	long subreq_size;
+	int subreq_size;
 	IQueue * reqQ;
 public:
-	IDSD(int, int, int, long);
+	IDSD(int, int, int);
 	virtual void newReq(gPacket *) = 0;
 	virtual gPacket * dispatchNext() = 0;
 	virtual gPacket * finishedReq(gPacket *) = 0;

@@ -43,6 +43,7 @@ private:
 	long aggregateSize; // The aggregate size of the current window.
 	int offset_start_server; // To calculate the remainder.
 	long offset_start_position;
+	int totalSubreqsInWindow; // Record the number of subreqs in the current window.
 /*
  * Explanation of data transmission process.
  *             offset           index    window

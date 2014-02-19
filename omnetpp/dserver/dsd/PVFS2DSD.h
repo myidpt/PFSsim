@@ -15,42 +15,57 @@
 
 #ifndef PVFS2DSD_H_
 #define PVFS2DSD_H_
+#include <map>
 #include "IDSD.h"
-#include "scheduler/FIFO.h"
+#include "scheduler/SchedulerFactory.h"
 
 #define MAX_DSD_OSREQS 512 // The max number of outstanding requests on DSD layer.
 
 class PVFS2DSD : public IDSD{
 protected:
 	struct info_t{
-		long id;
 		int small_req;
-		int obj_size;
-		int orig_size;
-		long obj_loff;
-		long orig_loff;
-		long obj_ub; // upper bound for the object-based request
-		long orig_ub; // upper bound for the original request
-		long hoff;
+		int size;
+		long loff;
+        long hoff;
+		long lub; // upper bound for the original request, only the lower part.
 		int fid;
 		int subID;
 		int app;
 		int read;
-		int decision;
+		int decision; // Different meanings for reads and writes.
 		int cid;
-		int inQueueID;
-	} info[MAX_DSD_OSREQS]; // Keeps the size and offset information of the "new" request, based on the object size.
-	bool oslist[MAX_APP]; // Keeps track of the number of outstanding subrequests belonging to one application.
+	};
+	// Keeps the size and offset information of the "new" request, based on the object size.
+	map<int, info_t *> * infoMap;
+    // Keeps track of the number of outstanding subrequests belonging to one application.
+	bool oslist[MAX_APP];
 	int packet_size_limit;
 	IQueue * subreqQ;
-	IQueue * cachedSubreqsBeforeReturn;
-	// Request Size/offset may be at this layer. Records the size of the original request when it returns.
 public:
-	PVFS2DSD(int, int, int, int);
+	PVFS2DSD(int, int, int);
+	// Put a new gPacket into reqQ.
+    // Get a gPacket from reqQ:
+    // 1. Check if the packet is a write. If so, put COMP information to info->decision. Then dispatch.
+    // 2. Resize the request according to the object size. Temporarily store the information into info[].
+    // 3. Push the first sub-request to subreqQ->waitQ.
 	inline void newReq(gPacket *);
-	inline void dispatchPVFSReqs();
 	inline gPacket * dispatchNext();
-	inline gPacket * finishedReq(gPacket *); // It will return the request with the original offset and size.
+	// When receive a finished sub-request:
+	// 1. Pop it from subreqQ.
+	// 2. Find the information for this original request from infoMap.
+	// 3. See if this is a write packet.
+	// If so, check the original packet to decide if it will be returned.
+	// 4. If this is a read packet.
+	// Generate the next one and put it into subreqQ (if the next one exists)
+	// and send it back.
+	// TODO: For read, this is not right. You can't finish one and return one.
+	// Because the original request offset may not be aligned,
+	// but the one that you are going to return has the offset aligned.
+	// In the long term, you need to have a cache. Now I just have a temp list
+	// for the subrequests.
+	// It will return the request with the original offset and size.
+	inline gPacket * finishedReq(gPacket *);
 	virtual ~PVFS2DSD();
 };
 

@@ -11,7 +11,7 @@
 PVFS2ClientStrategy::PVFS2ClientStrategy(int id) : myID(id){
 	requestID = CID_OFFSET * myID + RID_OFFSET * 1;
 	packet_size_limit = 10000000; // No limit by default.
-	appRequestQ = new FIFO(123, 100);
+	appRequestQ = SchedulerFactory::createScheduler(SchedulerFactory::FIFO_ALG, id, 100);
 }
 
 /*
@@ -226,6 +226,17 @@ void PVFS2ClientStrategy::processLastDataPacketResponse(gPacket * packet, vector
 	}
 
 	WindowBasedTrace::status ret = trace->finishedgPacket(packet);
+
+	// Update the earliest request finish time.
+    AppRequest * request = (AppRequest *)(appRequestQ->queryJob(packet->getSubID()));
+    if (request == NULL) {
+        PrintError::print("PVFS2ClientStrategy::processLastDataPacketResponse",
+                "Cannot find the original AppRequest from the queue.");
+        return;
+    }
+    if (request->getEarliestsubrequestfinishtime() < 0) {
+        request->setEarliestsubrequestfinishtime(packet->getFinishtime());
+    }
 
 	if(ret == trace->ALL_DONE){ // All done for this trace.
 		// Delete the trace.

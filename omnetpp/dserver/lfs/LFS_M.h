@@ -18,7 +18,6 @@
 
 #include <sys/types.h>
 #include "General.h"
-#include "scheduler/FIFO.h"
 #include "dserver/lfs/ILFS.h"
 #include "dserver/lfs/EXT3.h"
 using namespace std;

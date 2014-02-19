@@ -1,35 +1,17 @@
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see http://www.gnu.org/licenses/.
-//
+package ned;
 
-//
-// Two instances (tic and toc) of Txc connected.
-//
-// DatarateChannel
 import ned.client.Client;
 import ned.dataserver.Dserver;
 import ned.metadataserver.MetadataServer;
 import ned.router.Router;
 import ned.proxy.Proxy;
 
-package ned;
-
 network pfssim_1
 {
     parameters:
         int numClients;
         int numDservers;
+        int numProxies;
     types:
         channel Channel extends ned.DatarateChannel
         {
@@ -57,7 +39,7 @@ network pfssim_1
                 @display("p=265,258");
         }
 
-        proxy[numDservers]: Proxy {
+        proxy[numProxies]: Proxy {
             parameters:
                 @display("p=121,258");
         }
@@ -72,8 +54,8 @@ network pfssim_1
             gates:
                 c[numClients];
                 ds[numDservers];
-                proxy[numDservers];
-                intersch[numDservers];
+                proxy[numProxies];
+                intersch[numProxies];
         }
     connections:
         // C-Router channels
@@ -81,10 +63,14 @@ network pfssim_1
             c[i].gate <--> Channel <--> switch.c[i];
         }
 
-        // Router-DS and Router-DSscheduler channels
+        // Router-DS channels
         for i=0..numDservers-1 {
             switch.ds[i] <--> Channel <--> ds[i].g;
-            switch.proxy[i] <--> PChannel <--> proxy[i].g;
+        }
+
+        // Router-DSscheduler and inter-scheduler channels
+        for i=0..numProxies-1 {
+			switch.proxy[i] <--> PChannel <--> proxy[i].g;
             switch.intersch[i] <--> InterSchChannel <--> proxy[i].schg;
         }
 

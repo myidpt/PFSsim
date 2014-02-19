@@ -42,6 +42,7 @@ void ITrace::initialize(const AppRequest * request) {
 	traceFileID = request->getTraceFileID();
 	applicationID = request->getApp();
 	sync = request->getSync();
+	earliestSubrequestFinishTime = request->getEarliestsubrequestfinishtime();
 }
 
 AppRequest * ITrace::createAppRequest() {
@@ -88,6 +89,9 @@ int ITrace::getApplicationID(){
 }
 int ITrace::getSync(){
 	return sync;
+}
+double ITrace::getEarliestSubrequestFinishTime(){
+    return earliestSubrequestFinishTime;
 }
 
 ITrace::~ITrace() {

@@ -28,8 +28,8 @@ VFS::VFS() {
 void VFS::initialize(){
 	page_size = par("page_size").longValue();
 	degree = par("degree").longValue();
-	fileReqQ = new FIFO(12345, degree);
-	pageReqQ = new FIFO(12345, 1000); // We don't control the pageReqQ.
+	fileReqQ = SchedulerFactory::createScheduler(SchedulerFactory::FIFO_ALG, 12345, degree);
+	pageReqQ = SchedulerFactory::createScheduler(SchedulerFactory::FIFO_ALG, 12345, 1000); // We don't control the pageReqQ.
 }
 
 void VFS::handleMessage(cMessage * cmsg){

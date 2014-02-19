@@ -13,6 +13,7 @@ Define_Module(Application);
  * Used to initialize the IDs for each application class.
  */
 int Application::initID = 0;
+int Application::activeApplications = 0;
 
 /*
  * Initialize the ID.
@@ -64,6 +65,7 @@ void Application::initialize() {
 
 	traceProcessTime = par("trace_proc_time").doubleValue();
 
+	active = false;
 	// Process the initial trace.
 	generateInitialTraces();
 }
@@ -92,6 +94,10 @@ void Application::handleMessage(cMessage * message) {
  * Generate one trace request for each trace input flow.
  */
 void Application::generateInitialTraces() {
+    if (!active) {
+        activeApplications ++;
+        active = true;
+    }
 	for(int i = 0; i < traceInput->getTraceFlowCount(); i ++) {
 	    readOneTrace(i);
 	}
@@ -125,6 +131,13 @@ void Application::readOneTrace(int id) {
     SimpleTrace trace;
     if(! traceInput->readTrace(id, &trace)) {
         // End of file.
+        if (active) {
+            activeApplications --;
+            active = false;
+        }
+        if (activeApplications == 0) {
+            endSimulation(); // If all the input files meet EOF, end the simulation.
+        }
         return;
     }
 

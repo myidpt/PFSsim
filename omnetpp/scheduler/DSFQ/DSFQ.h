@@ -21,8 +21,8 @@
 class DSFQ : public SFQ{
 protected:
 	sPacket * pktToPropagate;
+    DSFQ(int, int, int, const char *);
 public:
-	DSFQ(int, int, int, const char *);
 	void receiveSPacket_InsertBack(sPacket *);
 	void receiveSPacket_InsertFront(sPacket *);
 	virtual sPacket * propagateSPacket();

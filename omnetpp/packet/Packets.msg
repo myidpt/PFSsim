@@ -38,6 +38,7 @@ packet AppRequest extends bPacket
     
     double starttime = 0;
     double finishtime = 0;
+    double earliestsubrequestfinishtime = -1;
 }
 
 packet qPacket extends bPacket
@@ -82,6 +83,8 @@ packet gPacket extends bPacket
     int dsID = -1; // The data server no. that the job to be sent.
     long aggregateSize = 0; // The aggregate size of the total request.
     int ODIRECT = 0; // If set, the IO will not go through the disk cache.
+    
+    int totalsubreqs = 1; // Total number of subrequests in its parent request.
 }
 
 packet PageRequest extends bPacket

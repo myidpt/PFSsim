@@ -111,6 +111,7 @@ void PFSClient::handleMessage(cMessage * message) {
 	case PFS_W_DATA_LAST:
 		sendDataPacketRequest((gPacket *)message);
 		break;
+
 	case PFS_W_RESP: // A write response.
 	case PFS_R_DATA: // Reads in.
 	case PFS_R_DATA_LAST:
@@ -137,12 +138,12 @@ void PFSClient::handleAppRequest(AppRequest * request) {
  * Pass the DataPacketResponse to the PFSClientStrategy.
  * Pass the result packets to the processPacketList to schedule/send them.
  */
-void PFSClient::handleDataPacketResponse(gPacket * packet) {
-	packet->setReturntime(SIMTIME_DBL(simTime()));
+void PFSClient::handleDataPacketResponse(gPacket * gpkt) {
+    gpkt->setReturntime(SIMTIME_DBL(simTime()));
 	if (dataPacketOutput != NULL) {
-		dataPacketOutput->writePacket(packet);
+		dataPacketOutput->writePacket(gpkt);
 	}
-	vector<cPacket *> * packetlist = pfsClientStrategy->handleDataPacketResponse(packet);
+	vector<cPacket *> * packetlist = pfsClientStrategy->handleDataPacketResponse(gpkt);
 	processPacketList(packetlist);
 }
 
@@ -204,8 +205,9 @@ void PFSClient::sendToEth(cPacket * packet){
  */
 void PFSClient::processPacketList(vector<cPacket *> * list) {
 	vector<cPacket *>::iterator it;
-	double dataPacketRiseTime = SIMTIME_DBL(simTime());
-	double metadataPacketRiseTime = SIMTIME_DBL(simTime());
+	double now = SIMTIME_DBL(simTime());
+	double dataPacketRiseTime = now;
+	double metadataPacketRiseTime = now;
 	for (it = list->begin(); it != list->end(); it ++) {
 #ifdef PFSCLIENT_DEBUG
 	cout << "PFSClient-" << myID << "::processPacketList packetID=" << ((bPacket *)(*it))->getID()
@@ -216,7 +218,7 @@ void PFSClient::processPacketList(vector<cPacket *> * list) {
 #ifdef PFSCLIENT_DEBUG
 	cout << "TRACE_RESP" << endl;
 #endif
-			((AppRequest *)(*it))->setFinishtime(SIMTIME_DBL(simTime()));
+			((AppRequest *)(*it))->setFinishtime(now);
 			sendAppResponse((AppRequest *)(*it));
 			break;
 

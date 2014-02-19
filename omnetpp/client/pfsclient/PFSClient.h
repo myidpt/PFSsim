@@ -12,8 +12,8 @@
 #include <typeinfo>
 
 #include "General.h"
-#include "scheduler/IQueue.h"
-#include "scheduler/FIFO.h"
+#include "scheduler/IQueue/IQueue.h"
+#include "scheduler/FIFO/FIFO.h"
 #include "iostreamer/StreamersFactory.h"
 #include "client/pfsclient/strategy/PVFS2ClientStrategy.h"
 

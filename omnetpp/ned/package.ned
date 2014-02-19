@@ -1,4 +1,2 @@
-
-@license(LGPL);
-
 package ned;
+@license(LGPL);

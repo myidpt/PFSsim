@@ -16,8 +16,8 @@
 #ifndef DSD_M_H_
 #define DSD_M_H_
 #include <iostream>
+#include <map>
 #include "General.h"
-#include "scheduler/FIFO.h"
 #include "dserver/dsd/IDSD.h"
 #include "dserver/dsd/PVFS2DSD.h"
 
@@ -25,13 +25,18 @@ class DSD_M : public cSimpleModule{
 protected:
 	static int idInit;
 	int myID;
+	int packet_size_limit;
 	double parallel_job_proc_time;
 	double write_data_proc_time;
-	double write_metadata_proc_time; // This is exclusively for the processing of the write request(JOB_REQ) message.
-	double read_metadata_proc_time; // This is exclusively for the processing of the write request(JOB_REQ) message.
+    // This is exclusively for the processing of the write request(JOB_REQ) message.
+	double write_metadata_proc_time;
+	// This is exclusively for the processing of the read request(JOB_REQ) message.
+	double read_metadata_proc_time;
 	double small_io_size_threshold;
 	IDSD * dsd;
 	int O_DIRECT;
+	// Record the incremental IDs for returned read packets.
+	map<long, long> readPktIDMap;
 public:
 	DSD_M();
 	void initialize();
@@ -40,11 +45,12 @@ public:
 	inline void handleReadWriteReq(gPacket * gpkt);
 	inline void handleSelfWriteReq(gPacket * gpkt);
 	inline void handleWriteDataPacket(gPacket * gpkt);
+	inline void handleReadDataResp(gPacket * gpkt);
 
 	inline void sendWriteResp(gPacket * gpkt);
-	inline void enqueue_dispatch_VFSReqs(gPacket * gpkt);
-	inline void handle_VFSResp(gPacket * gpkt);
-	inline void dispatch_VFSReqs();
+	inline void enqueueDispatchVFSReqs(gPacket * gpkt);
+	inline void handleVFSResp(gPacket * gpkt);
+	inline void dispatchVFSReqs();
 	inline void sendToVFS(gPacket * gpkt);
 	inline void sendToEth(gPacket * gpkt);
 	void finish();

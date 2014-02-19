@@ -10,9 +10,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define MAX_FILE 1024 		// The maximum number of files.
-#define MAX_APP 256 		// The maximum number of applications.
-#define MAX_DS 64
+#define MAX_FILE            1024 // The maximum number of files.
+#define MAX_APP             8 // The maximum number of applications.
+#define MAX_DS              32
 #define MAX_APP_PER_C		100
 #define TRC_MAXSIZE			0x3DE00000 // According to PVFS 0x40000000, 990MB
 #define JOB_MAXSIZE		    0xa00000 // According to PVFS 0xa00000, 10MB, one trace can have 99 JOBs
@@ -91,16 +91,6 @@
 #define PVFS_SYS_LAYOUT_RANDOM 			3
 #define PVFS_SYS_LAYOUT_LIST 			4
 
-#define FIFO_ALG			0
-#define SFQ_ALG				1
-#define DSFQA_ALG			2
-#define DSFQD_ALG			3
-#define DSFQF_ALG			4
-#define SSFQ_ALG			5
-#define DSFQATB_ALG			6
-#define DSFQALB_ALG			7
-#define SFQRC_ALG           8
-
 #define DISKCACHE_TRIMCACHE // This will shrink the cache's doubly-linked list by merging adjacent elements in address. It improves performance.
 //#define DISKCACHE_CHECKHEALTH // This checks the cache doubly-linked list health every time; it down grades performance greatly.
 
@@ -123,7 +113,8 @@
 //#define PROXY_DEBUG
 
 //#define SCH_DEBUG
-//#define SCH_PRINT
+//#define SCH_DEBUG2
+#define SCH_PRINT
 
 //#define MONITOR_DIRTYPAGE
 //#define MONITOR_CACHEDPAGE
@@ -162,7 +153,7 @@
 #include "packet/Packets_m.h"
 #include "util/PrintError.h"
 #include "util/MessageKind.h"
-#include "scheduler/IQueue.h"
+#include "scheduler/IQueue/IQueue.h"
 
 #define SMALLDBL 			0.000001
 

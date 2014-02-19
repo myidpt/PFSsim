@@ -1,18 +1,3 @@
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-// 
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see http://www.gnu.org/licenses/.
-// 
-
 package ned.router;
 
 module Router
@@ -36,7 +21,7 @@ module Router
                 interschin[sizeof(intersch)];
                 
                 cout[sizeof(c)];
-                dsout[sizeof(proxy)];
+                dsout[sizeof(ds)];
                 schout[sizeof(proxy)];
                 interschout[sizeof(intersch)];
         }
@@ -62,12 +47,15 @@ module Router
             routing.cin[i] <-- cq[i].out;
             c[i] <--> cq[i].line;
         }
-        // data server and scheduler
+        // data server
         for i=0..sizeof(ds)-1 {
             routing.dsout[i] --> dsq[i].in;
             routing.dsin[i] <-- dsq[i].out;
             ds[i] <--> dsq[i].line;
-
+        }
+        
+        // scheduler
+        for i=0..sizeof(proxy)-1 {
             routing.schout[i] --> schq[i].in;
             routing.schin[i] <-- schq[i].out;
             proxy[i] <--> schq[i].line;
@@ -76,6 +64,7 @@ module Router
             routing.interschin[i] <-- interschq[i].out;
             intersch[i] <--> interschq[i].line;
         }
+        
         // metadata server
         routing.msout --> msq.in;
         routing.msin <-- msq.out;

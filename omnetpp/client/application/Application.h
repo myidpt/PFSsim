@@ -12,7 +12,10 @@
 class Application : public cSimpleModule
 {
 protected:
-	int myID;
+    static int activeApplications;
+    bool active;
+
+    int myID;
 	static int initID;
 
 	ITraceInputStreamer * traceInput;

@@ -1,22 +1,9 @@
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see http://www.gnu.org/licenses/.
-//
+// Yonggang Liu
 
 #ifndef DISK_H_
 #define DISK_H_
 #include "General.h"
-#include "scheduler/FIFO.h"
+#include "scheduler/SchedulerFactory.h"
 
 #define JUMPSIZECOUNT	22
 #define BLKSIZECOUNT	9 // 4K -> 1M
@@ -31,7 +18,7 @@ protected:
 	int myID;
 	int portno;
 	int outstanding;
-	FIFO * queue;
+	IQueue * queue;
 
 	long last_offset; // The offset of the last access (Consider 4096 as the unit).
 	long last_jump;

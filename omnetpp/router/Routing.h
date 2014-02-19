@@ -21,8 +21,12 @@
 
 class Routing : public cSimpleModule
 {
+private:
+    int StoPRoutingTable[MAX_DS];
+    void readProxyRoutingFile(const char * path);
 protected:
-	int numSchedulers;
+    int numDS;
+	int numProxies;
 	void initialize();
 	virtual void handleMessage(cMessage *msg);
 	void handleSPacketPropagation(sPacket * spkt);

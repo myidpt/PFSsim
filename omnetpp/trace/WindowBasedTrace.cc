@@ -78,6 +78,7 @@ gPacket * WindowBasedTrace::getNextgPacketFromWindow(){
 			packet->setSubID(ID);
 			packet->setApp(applicationID);
 			packet->setDsID(layout->getServerID(i));
+			packet->setTotalsubreqs(totalSubreqsInWindow);
 			dataSizeInWindow[i] = SW_SENT;
 #ifdef TRACE_DEBUG
     cout << "packet size=" << packet->getSize() << endl;
@@ -149,6 +150,15 @@ bool WindowBasedTrace::openNewWindow(){
 			dataSizeInWindow[i] += leftAggSize;
 			leftAggSize = 0;
 		}
+	}
+
+	// Calculate the number of subrequests together in this window.
+	// Used for setting gPacket->setTotalsubreqs();
+    totalSubreqsInWindow = 0;
+	for (int i = 0; i < layout->getServerNum(); i ++) {
+	    if (dataSizeInWindow > 0) {
+	        totalSubreqsInWindow ++;
+	    }
 	}
 
 #ifdef TRACE_DEBUG

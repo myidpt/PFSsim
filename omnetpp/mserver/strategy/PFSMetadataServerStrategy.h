@@ -20,10 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <omnetpp.h>
-
 #include "General.h"
-#include "scheduler/IQueue.h"
-#include "scheduler/FIFO.h"
 
 class PFSMetadataServerStrategy {
 public:

@@ -28,6 +28,7 @@ protected:
 	int applicationID;
 	double startTime;
 	double finishTime;
+	double earliestSubrequestFinishTime;
 	int sync;
 	int traceFileID; // Input file ID.
 	int pfsFileID; // PFS file ID.
@@ -47,6 +48,7 @@ public:
     int getApplicationID();
     int getFileID();
 	int getSync();
+	double getEarliestSubrequestFinishTime();
 	~ITrace();
 };
 

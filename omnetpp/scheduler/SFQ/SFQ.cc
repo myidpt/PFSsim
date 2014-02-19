@@ -1,22 +1,10 @@
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see http://www.gnu.org/licenses/.
-//
+// Yonggang Liu
 
-#include "scheduler/SFQ.h"
+#include "scheduler/SFQ/SFQ.h"
 
 FILE * SFQ::schfp = NULL;
 
+// Alg_param format: [id weight] [id weight] [id weight] ...
 SFQ::SFQ(int id, int deg, int tlapps, const char * alg_param) : IQueue(id, deg) {
 	vtime = 0;
 	appNum = tlapps;
@@ -130,19 +118,6 @@ bPacket * SFQ::dispatchNext(){
 }
 
 void SFQ::pushOsQ(Job * job){
-	/*
-	if(osQ->empty()){
-		osQ->push_back(job);
-		return;
-	}
-	typename list<Job*>::iterator iter;
-	for(iter = osQ->begin(); iter != osQ->end(); iter ++){
-		if( (*iter)->stag > job->stag ){
-			osQ->insert(iter, job);
-			return;
-		}
-	}
-	*/
 	osQ->push_back(job);
 }
 
@@ -280,6 +255,9 @@ SFQ::~SFQ(){
 			delete waitQ[i];
 		}
 	}
+#ifdef SCH_PRINT
+	fclose(schfp);
+#endif
 }
 
 void SFQ::setWeights(const char * alg_param){

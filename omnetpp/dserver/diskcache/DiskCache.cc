@@ -749,12 +749,11 @@ int DiskCache::readCache(PageRequest * req){
 	file_t * file = it2->second;
 	cpr = file->pr_head; // Cached page-range.
 
-	long start, end, cacheaccess_end;
+	long start, end;
 	rpr = it1->second;
 
 	start = rpr->start;
 	end = rpr->end;
-	cacheaccess_end = req->getPageEnd();
 
 
 #ifdef DISKCACHE_DEBUG
@@ -778,14 +777,17 @@ int DiskCache::readCache(PageRequest * req){
 
 			// Get the higher start - intersection starts
 			if(rpr->start < cpr->start){ // beginning not cached.
-				if(rpr->end < cpr->start)
+				if(rpr->end < cpr->start) {
 					end = rpr->end;
-				else
+				}
+				else {
 					end = cpr->start;
+				}
 				end = start + getAccessSize(req->getFileId(), start, end, true, false);
 				scheduleDiskAccess(req->getID(), req->getSubID(), req->getFileId(), start, end, true);
-				if(!disable_ra)
+				if(!disable_ra) {
 					file->f_ra->update_flag_incache(start, end-start, false); // Update the read ahead INCACHE flag
+				}
 			}else{ // beginning cached. - need to see if it is RA? If it is, ignore it.
 				if(cpr->end < rpr->end) {
 					end = cpr->end;
@@ -822,8 +824,9 @@ int DiskCache::readCache(PageRequest * req){
 			// The requested pages do not exist in cache! - the requested ones fall into a hole in the cached ones.
 			end = start + getAccessSize(req->getFileId(), start, end, true, false);
 			scheduleDiskAccess(req->getID(), req->getSubID(), req->getFileId(), start, end, true);
-			if(!disable_ra)
+			if(!disable_ra) {
 				file->f_ra->update_flag_incache(start, end-start, false); // Update the read ahead INCACHE flag
+			}
 			return 0;
 		}
 	}
@@ -831,8 +834,9 @@ int DiskCache::readCache(PageRequest * req){
 		// The requested pages do not exist in cache! - all cached ones are lower than the requested one.
 		end = start + getAccessSize(req->getFileId(), start, end, true, false);
 		scheduleDiskAccess(req->getID(), req->getSubID(), req->getFileId(), start, end, true);
-		if(!disable_ra)
+		if(!disable_ra) {
 			file->f_ra->update_flag_incache(start, end-start, false); // Update the read ahead INCACHE flag
+		}
 	}
 	else{ // rpr->start == rpr->end. All done for this request. And rpr is read-ahead range.
 #ifdef DISKCACHE_DEBUG

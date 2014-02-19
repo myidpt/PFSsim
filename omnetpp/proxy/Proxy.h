@@ -15,24 +15,26 @@
 
 #ifndef PROXY_H_
 #define PROXY_H_
+
+#define INFO_INTERVAL 0.1
+
 #include "General.h"
 
-#include "scheduler/FIFO.h"
-#include "scheduler/SFQ.h"
-#include "scheduler/SSFQ.h"
-#include "scheduler/DSFQA.h"
+#include "scheduler/SchedulerFactory.h"
 
 class Proxy : public cSimpleModule{
 protected:
 	static int proxyID;
 	int myID;
-	int algorithm;
+	const char * algorithm;
 	int degree;
 	double newjob_proc_time;
 	double finjob_proc_time;
 	IQueue * queue;
 	gPacket * alg_timer;
-	double alg_prop_int;
+
+	int osReqNum;
+	double totalOSReqNum;
 public:
 	Proxy();
 	void initialize();

@@ -13,20 +13,30 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-#include "DSFQA.h"
+#include "DTAFIFO.h"
 
-DSFQA::DSFQA(int id, int deg, int totalapp, const char * alg_param) : DSFQ(id, deg, totalapp, alg_param) {
+DTA_FIFO::DTA_FIFO(int id, int deg) : FIFO(id, deg) {
 }
 
-void DSFQA::receiveSPacket(sPacket * spkt){
-	DSFQ::receiveSPacket_InsertBack(spkt);
+void DTA_FIFO::refineWaitQ(map<long, bPacket *> * refinemap) {
+    bool d = true;
+    while(d == true) {
+        d = false;
+        for (list<bPacket *>::iterator it = waitQ->begin();
+                it != waitQ->end(); it ++) {
+            if (refinemap->find((*it)->getID())
+                    == refinemap->end()) { // It doesn't exist.
+#ifdef SCH_DEBUG
+                cout << (*it)->getID() << " does not exist in FIFO queue." << endl;
+#endif
+                waitQ->erase(it);
+                d = true;
+                break;
+            }
+        }
+    }
 }
 
-void DSFQA::pushWaitQ(bPacket * pkt){
-	DSFQ::pushWaitQ(pkt);
-	pktToPropagate->setLengths(pkt->getApp(), pktToPropagate->getLengths(pkt->getApp()) + pkt->getSize());
-	pktToPropagate->setSrc(myID); // Set activate
+DTA_FIFO::~DTA_FIFO() {
 }
 
-DSFQA::~DSFQA() {
-}

@@ -18,7 +18,7 @@
 
 #include <sys/types.h>
 #include "General.h"
-#include "scheduler/FIFO.h"
+#include "scheduler/SchedulerFactory.h"
 using namespace std;
 
 class VFS : public cSimpleModule{
@@ -26,8 +26,8 @@ protected:
     int degree;
     int page_size;
     int blk_size;
-	FIFO * fileReqQ;
-	FIFO * pageReqQ;
+	IQueue * fileReqQ;
+	IQueue * pageReqQ;
 public:
 	VFS();
 	void initialize();

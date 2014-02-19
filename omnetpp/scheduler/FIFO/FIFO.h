@@ -15,16 +15,22 @@
 
 #ifndef FIFO_H_
 #define FIFO_H_
+
 #include "General.h"
+#include "IQueue.h"
+
 using namespace std;
 
 class FIFO : public IQueue{
-private:
+protected:
 	list<bPacket *> * waitQ;
 	list<bPacket *> * osQ;
 public:
-	FIFO(int, int);
+	FIFO(int id, int deg);
+    bPacket * seeWaitQNext();
+    bPacket * seeOsQNext();
 	void pushWaitQ(bPacket *);
+	void pushOsQ(bPacket *);
 	bPacket * dispatchNext();
 	bPacket * popOsQ();
 	bPacket * popOsQ(long id);
@@ -33,6 +39,10 @@ public:
 	bPacket * queryJob(long id, long subid);
 	sPacket * propagateSPacket();
 	void receiveSPacket(sPacket *);
+    int getWaitQSize();
+    int getOsQSize();
+    bool waitQisEmpty();
+    bool osQisEmpty();
 	bool isEmpty();
 	virtual ~FIFO();
 };

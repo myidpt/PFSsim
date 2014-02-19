@@ -15,6 +15,7 @@
 
 #include "DSFQ.h"
 
+// Alg_param format: [id weight] [id weight] [id weight] ...
 DSFQ::DSFQ(int id, int deg, int totalapp, const char * alg_param) : SFQ(id, deg, totalapp, alg_param) {
 	pktToPropagate = new sPacket("PROP_SCH");
 	pktToPropagate->setKind(PROP_SCH);

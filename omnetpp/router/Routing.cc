@@ -18,7 +18,38 @@
 Define_Module(Routing);
 
 void Routing::initialize(){
-	numSchedulers = par("numDservers").longValue();
+    numDS = par("numDservers").longValue();
+	numProxies = par("numProxies").longValue();
+	readProxyRoutingFile(par("proxy_routing_path").stringValue());
+}
+
+void Routing::readProxyRoutingFile(const char * path) {
+    FILE * fp = fopen(path, "r");
+    if(fp == NULL){
+        PrintError::print(
+            "Routing-readProxyRoutingFile", string("can not open file") + path);
+        return;
+    }
+    char line[800];
+    while(fgets(line, 300, fp) != NULL){
+        if(line[0] == '#') { // Comment.
+            continue;
+        }
+        int server;
+        int proxy;
+        sscanf(line, "%d %d", &server, &proxy);
+        if (server >= numDS) {
+            PrintError::print(
+                "Routing-readProxyRoutingFile", 0,
+                "Server ID exceeds server number.", server);
+        }
+        else if (proxy >= numProxies){
+            PrintError::print(
+                "Routing-readProxyRoutingFile", 0,
+                "Proxy ID exceeds proxy number.", proxy);
+        }
+        StoPRoutingTable[server] = proxy;
+    }
 }
 
 void Routing::handleMessage(cMessage *msg)
@@ -33,18 +64,18 @@ void Routing::handleMessage(cMessage *msg)
 	case PFS_W_DATA: // client -> server
 	case PFS_W_DATA_LAST:
 	case PFS_W_REQ:
-	case PFS_R_REQ:
+	case PFS_R_REQ: // client -> proxy, proxy -> ds
 		if(strstr(msg->getArrivalGate()->getFullName(), "cin") != NULL)
-			send(msg, "schout", ((gPacket *)msg)->getDsID());
+			send(msg, "schout", StoPRoutingTable[((gPacket *)msg)->getDsID()]);
 		else if(strstr(msg->getArrivalGate()->getFullName(), "schin") != NULL)
 			send(msg, "dsout", ((gPacket *)msg)->getDsID());
 		break;
 	case PFS_W_RESP:
 	case PFS_R_DATA:
 	case PFS_R_DATA_LAST:
-	case PFS_W_FIN:
+	case PFS_W_FIN: // ds -> proxy, proxy -> client
 		if(strstr(msg->getArrivalGate()->getFullName(), "dsin") != NULL)
-			send(msg, "schout", ((gPacket *)msg)->getDsID());
+			send(msg, "schout", StoPRoutingTable[((gPacket *)msg)->getDsID()]);
 		else if(strstr(msg->getArrivalGate()->getFullName(), "schin") != NULL)
 			send(msg, "cout", ((gPacket *)msg)->getClientID());
 		break;
@@ -57,7 +88,7 @@ void Routing::handleMessage(cMessage *msg)
 void Routing::handleSPacketPropagation(sPacket * spkt){
 	int srcId = spkt->getSrc();
 	if(spkt->getDst() == -1){
-		for(int i = 0; i < numSchedulers; i ++){
+		for(int i = 0; i < numProxies; i ++){
 			if(srcId != i){
 				sPacket * tmp = new sPacket(*spkt);
 				tmp->setDst(i);

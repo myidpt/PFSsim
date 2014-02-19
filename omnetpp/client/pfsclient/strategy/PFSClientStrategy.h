@@ -12,8 +12,8 @@
 #include <omnetpp.h>
 
 #include "General.h"
-#include "scheduler/IQueue.h"
-#include "scheduler/FIFO.h"
+#include "scheduler/IQueue/IQueue.h"
+#include "scheduler/FIFO/FIFO.h"
 
 class PFSClientStrategy {
 public:

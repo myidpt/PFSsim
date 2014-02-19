@@ -1,17 +1,4 @@
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see http://www.gnu.org/licenses/.
-//
+// Auther: Yonggang Liu. All rights reserved.
 
 #include "Proxy.h"
 
@@ -26,10 +13,8 @@ void Proxy::initialize(){
 	myID = proxyID;
 	proxyID ++;
 
-	algorithm = par("algorithm").longValue();
+	algorithm = par("algorithm").stringValue();
 	const char * alg_param =par("alg_param").stringValue();
-	alg_prop_int = par("alg_prop_int").doubleValue(); // This is the time interval.
-	double alg_prop_wl = par("alg_prop_wl").doubleValue(); // This is the workload threshold.
 	degree = par("degree").longValue();
 	newjob_proc_time = par("newjob_proc_time").doubleValue();
 	finjob_proc_time = par("finjob_proc_time").doubleValue();
@@ -37,49 +22,25 @@ void Proxy::initialize(){
 	alg_timer = NULL;
 
 	cout << "Proxy #" << myID << " algorithm: ";
-	switch(algorithm){
-	case FIFO_ALG:
-		cout << "FIFO(" << degree << ")." << endl;
-		queue = new FIFO(myID, degree);
-		break;
-	case SFQ_ALG:
-		cout << "SFQ(" << degree << ")";
-		queue = new SFQ(myID, degree, numapps, alg_param);
-		break;
-	case DSFQA_ALG:
-		cout << "DSFQA(" << degree << ")";
-		queue = new DSFQA(myID, degree, numapps, alg_param);
-		break;
-	/*
-  case DSFQD_ALG:
-		cout << "DSFQD(" << degree << ")";
-		queue = new DSFQD(myID, degree, numapps, alg_param);
-		break;
-	case DSFQF_ALG:
-		cout << "DSFQF(" << degree << ")";
-		queue = new DSFQF(myID, degree, numapps, alg_param);
-		break;
-	case DSFQATB_ALG:
-		cout << "DSFQA(" << degree << ")-TimeBased";
-		queue = new DSFQATB(myID, degree, numapps, alg_param);
-		alg_timer = new gPacket("ALG_TIMER");
-		alg_timer->setKind(ALG_TIMER);
-		scheduleAt((simtime_t)(SIMTIME_DBL(simTime()) + alg_prop_int), alg_timer);
-		break;
-	case DSFQALB_ALG:
-		cout << "DSFQA(" << degree << ")-LoadBased";
-		queue = new DSFQALB(myID, degree, numapps, alg_prop_wl, alg_param);
-		break;
-	case SFQRC_ALG:
-        cout << "SFQRC(" << degree << ")";
-        queue = new SFQRC(myID, degree, numapps, alg_param);
-        break;
-	*/
-  default:
-		PrintError::print("Proxy", "Undefined algorithm.");
-		deleteModule();
-		break;
+	queue = SchedulerFactory::createScheduler(algorithm, myID, degree, numapps, alg_param);
+
+	if (queue == NULL) {
+	    PrintError::print("Proxy", "Undefined algorithm.");
+	    deleteModule();
 	}
+
+	// These algorithms need to set the timers.
+    if (!strcmp(algorithm, SchedulerFactory::DSFQATB_ALG) || !strcmp(algorithm, SchedulerFactory::I2L_ALG)) {
+        alg_timer = new gPacket("ALG_TIMER");
+        alg_timer->setKind(ALG_TIMER);
+        scheduleAt(queue->notify(), alg_timer);
+    }
+/*
+    cMessage * info_timer = new cMessage("INFO", SELF_EVENT);
+    scheduleAt(INFO_INTERVAL, info_timer);
+*/
+    osReqNum = 0;
+    totalOSReqNum = 0;
 }
 
 /*
@@ -133,7 +94,16 @@ void Proxy::handleMessage(cMessage * cmsg) {
 	case ALG_TIMER: // Timer for the propagation interval.
 		handleAlgorithmTimer();
 		break;
-
+/*
+	case SELF_EVENT: // Self information print.
+	    scheduleAt(SIMTIME_DBL(simTime()) + INFO_INTERVAL, cmsg);
+        totalOSReqNum += osReqNum;
+	    if (((int)(SIMTIME_DBL(simTime())*10 + 1) % 10) == 0) {
+	        cout << "Time: " << SIMTIME_DBL(simTime()) << " " << (totalOSReqNum / 10) << endl;
+	        totalOSReqNum = 0;
+	    }
+	    break;
+*/
 	default:
 		char sentence[50];
 		sprintf(sentence, "Unknown message type %d.", cmsg->getKind());
@@ -147,7 +117,6 @@ void Proxy::handleJobReq(gPacket * gpkt){
 	cout << "[" << SIMTIME_DBL(simTime()) << "] Proxy #" << myID << ": handleJobReq ID=" << gpkt->getID() << endl;
 	fflush(stdout);
 #endif
-
 	gpkt->setInterceptiontime(SIMTIME_DBL(simTime()));
 	if (gpkt->getKind() == PFS_R_REQ) {
 		gpkt->setKind(SELF_PFS_R_REQ);
@@ -163,12 +132,15 @@ void Proxy::handleJobReq(gPacket * gpkt){
 }
 
 void Proxy::handleJobReq2(gPacket * gpkt) {
-    if (algorithm == SFQRC_ALG) {
-        queue->pushWaitQ(gpkt, SIMTIME_DBL(simTime())); // This algorithm requires the current time information.
-    } else {
-        queue->pushWaitQ(gpkt); // Push in the request.
-    }
-    if(algorithm == DSFQA_ALG || algorithm == DSFQALB_ALG) { // DSFQA packet propagation is triggered.
+#ifdef PROXY_DEBUG
+    cout << "[" << SIMTIME_DBL(simTime()) << "] Proxy #" << myID << ": handleJobReq2 ID=" << gpkt->getID() << endl;
+    fflush(stdout);
+#endif
+
+    queue->pushWaitQ(gpkt); // Push in the request.
+    if(!strcmp(algorithm, SchedulerFactory::DSFQA_ALG)
+            || !strcmp(algorithm, SchedulerFactory::DSFQALB_ALG)) {
+        // DSFQA packet propagation is triggered.
 		propagateSPackets();
     }
 	scheduleJobs();
@@ -179,6 +151,7 @@ void Proxy::handleReadLastWriteFin(gPacket * gpkt) { // from the data server
 	cout << "[" << SIMTIME_DBL(simTime()) << "] Proxy #" << myID << ": handleJobRespFinComp ID=" << gpkt->getID() << endl;
 	fflush(stdout);
 #endif
+
 	if (gpkt->getKind() == PFS_W_FIN) {
 		gpkt->setKind(SELF_PFS_W_FIN);
 	} else { // PFS_R_DATA_LAST
@@ -201,14 +174,11 @@ void Proxy::handleReadLastWriteFin2(gPacket * gpkt){
 	int recordPacketID = gpkt->getID() / RID_OFFSET * RID_OFFSET;
 	// The recorded one is the request, which has the lowest ID among the serial of packets from one request.
 	gPacket * queuedpacket;
-    if (algorithm == SFQRC_ALG) {
-        queuedpacket = (gPacket *)queue->popOsQ(recordPacketID, SIMTIME_DBL(simTime()));
-    } else {
-        queuedpacket = (gPacket *)queue->popOsQ(recordPacketID);
-    }
+    queuedpacket = (gPacket *)queue->popOsQ(recordPacketID);
 	delete queuedpacket; // Delete the record.
+	osReqNum --;
 
-	if(algorithm == DSFQF_ALG) { // DSFQA packet propagation is triggered.
+	if(!strcmp(algorithm, SchedulerFactory::DSFQF_ALG)) { // DSFQA packet propagation is triggered.
 		propagateSPackets();
 	}
 
@@ -245,33 +215,44 @@ void Proxy::handleAlgorithmTimer(){
 #ifdef PROXY_DEBUG
 	cout << "[" << SIMTIME_DBL(simTime()) << "] Proxy #" << myID << ": handleAlgorithmTimer" << endl;
 #endif
-	if(algorithm != DSFQATB_ALG){
-		PrintError::print("Proxy", "handleAlgorithmTimer called when algorithm is not DSFQATB_ALG.", algorithm);
-	}
+	if (!strcmp(algorithm, SchedulerFactory::DSFQATB_ALG)) {
 		propagateSPackets();
-		scheduleAt((simtime_t)(SIMTIME_DBL(simTime()) + alg_prop_int), alg_timer);
+        scheduleAt(queue->notify(), alg_timer);
+	}
+	else if (!strcmp(algorithm, SchedulerFactory::I2L_ALG)) {
+        scheduleAt(queue->notify(), alg_timer);
+        scheduleJobs(); // Due to the update of the information, new requests may be available to be dispatched.
+	}
+	else {
+        PrintError::print("Proxy", "Current algorithm does not support .");
+	}
 }
 
 void Proxy::scheduleJobs(){
+#ifdef PROXY_DEBUG
+    cout << "ScheduleJobs." << endl;
+#endif
 	gPacket * jobtodispatch = NULL;
 	gPacket * packetcopy = NULL;
 	while(1){
-	    if (algorithm == SFQRC_ALG) {
-            jobtodispatch = (gPacket *)queue->dispatchNext(SIMTIME_DBL(simTime()));
-	    } else {
-	        jobtodispatch = (gPacket *)queue->dispatchNext();
-	    }
+	    jobtodispatch = (gPacket *)queue->dispatchNext();
 
 		if(jobtodispatch != NULL){
-			if(algorithm == DSFQD_ALG) // DSFQA packet propagation is triggered.
+			if(!strcmp(algorithm, SchedulerFactory::DSFQD_ALG)) { // DSFQA packet propagation is triggered.
 				propagateSPackets();
+			}
 			packetcopy = new gPacket(*jobtodispatch);
+			jobtodispatch->setScheduletime(SIMTIME_DBL(simTime()));
 			packetcopy->setScheduletime(SIMTIME_DBL(simTime()));
 			sendSafe(packetcopy);
+			osReqNum ++;
 		}
 		else
 			break;
 	}
+#ifdef PROXY_DEBUG
+    cout << "ScheduleJobs done." << endl;
+#endif
 }
 
 void Proxy::sendSafe(gPacket * gpkt){
@@ -324,8 +305,11 @@ void Proxy::handleInterSchedulerPacket(sPacket * spkt){
 			<< spkt->getSrc() << endl;
 	fflush(stdout);
 #endif
-	if(algorithm != DSFQF_ALG && algorithm != DSFQA_ALG && algorithm != DSFQD_ALG
-			&& algorithm != DSFQATB_ALG && algorithm != DSFQALB_ALG){
+	if(strcmp(algorithm, SchedulerFactory::DSFQF_ALG)
+	        && strcmp(algorithm, SchedulerFactory::DSFQA_ALG)
+	        && strcmp(algorithm, SchedulerFactory::DSFQD_ALG)
+			&& strcmp(algorithm, SchedulerFactory::DSFQATB_ALG)
+			&& strcmp(algorithm, SchedulerFactory::DSFQALB_ALG)) {
 		PrintError::print("Proxy", "distributed scheduling algorithm not selected,"
 		        " calling handleInterSchedulerPacket is prohibited.");
 		return;

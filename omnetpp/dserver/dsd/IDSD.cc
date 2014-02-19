@@ -15,7 +15,8 @@
 
 #include "IDSD.h"
 
-IDSD::IDSD(int id, int deg, int objsize, long subreqsize) : myID(id), degree(deg), obj_size(objsize), subreq_size(subreqsize) {
+IDSD::IDSD(int id, int deg, int subreqsize)
+: myID(id), degree(deg), subreq_size(subreqsize) {
 }
 
 IDSD::~IDSD() {

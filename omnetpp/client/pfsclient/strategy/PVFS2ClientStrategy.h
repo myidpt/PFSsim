@@ -9,7 +9,7 @@
 #include "pfsfile/PFSFiles.h"
 #include "pfsfile/PVFS2File.h"
 #include "trace/WindowBasedTrace.h"
-#include "scheduler/FIFO.h"
+#include "scheduler/SchedulerFactory.h"
 
 class PVFS2ClientStrategy : public PFSClientStrategy {
 protected:
@@ -17,7 +17,7 @@ protected:
 
 	vector<WindowBasedTrace *> traces;
 	PFSFiles pfsFiles;
-	FIFO * appRequestQ;
+	IQueue * appRequestQ;
 
 	int requestID;
 
