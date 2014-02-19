@@ -21,7 +21,6 @@ nline = int(tsize / size)
 time = 0
 offset = 0
 fid = 0
-app = 0
 sync = 0
 
 random.seed()
