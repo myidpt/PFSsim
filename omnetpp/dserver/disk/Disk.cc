@@ -6,12 +6,18 @@
 Define_Module(Disk);
 
 int Disk::idInit = 0;
-
+int Disk::numDisk = 0;
 Disk::Disk() {
 }
 
 void Disk::initialize(){
-	myID = idInit ++;
+    if(numDisk == 0){//Parse only one time cause it's a static
+        numDisk=par("numDservers").longValue();//Suppose that there is 1 Disk per Server, If not change the omnet.ini and parse the correct value and change the variable in Disk.ned
+    }
+    myID = idInit ++;
+    if(myID>=numDisk-1){
+       idInit=0;
+    }
 
 	diskSize = par("disk_size").longValue();
 //	zoneSize = diskSize / ZONECOUNT;
@@ -157,11 +163,13 @@ void Disk::dispatchJobs(){
 			if(myID == 4)
 			cout << " - Disk: Sequential" << endl;
 #endif
-			if(blki == BLKSIZECOUNT)
+			if(blki == BLKSIZECOUNT){
 				timespan = seqtime[r][blki-1];
-			else
+			}
+			else{
 				timespan = (seqtime[r][blki]-seqtime[r][blki-1])
 					*(length-blksizes[blki-1])/(blksizes[blki]-blksizes[blki-1])+seqtime[r][blki-1];
+			}
 
 //			cout << r << " " << blki-1 << " " << seqtime[r][blki-1] << endl;
 
@@ -198,6 +206,9 @@ void Disk::dispatchJobs(){
 		if(timespan < 0)
 			PrintError::print("Disk - dispatchJobs", "timespan is zero or negative.", timespan);
 
+		/*if(myID == 5){
+		    cout << "Disk::dispatchJobs() timespan(ms) : " << timespan << endl;
+		}*/
 		scheduleAt(SIMTIME_DBL(simTime()) + timespan, req);
 	}
 }
@@ -209,6 +220,7 @@ void Disk::sendSafe(BlkRequest * req){
 #define LAST_JUMP_THRESHOLD 180
 #define JUMP_THRESHOLD	16
 #define SEQ_RA_THRESHOLD	96
+
 bool Disk::checkReadahead(BlkRequest * req){
 // If read-ahead is involved, don't read from the table as normal.
 // The read-ahead judge is simplified here, and it is not suitable to all disks.

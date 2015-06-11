@@ -33,6 +33,7 @@ protected:
 	long ra_size; // Read-ahead at the disk drive level. A simple algorithm is implemented. If ra_size < 0, that means ra is disabled.
 	int return_zero; // Return zero after every access.
 	static int idInit;
+	static int numDisk;
 
 	FILE * debugfp;
 

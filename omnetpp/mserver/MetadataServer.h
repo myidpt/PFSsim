@@ -21,6 +21,7 @@ class MetadataServer : public cSimpleModule
 protected:
 	int myID;
 	static int initID;
+	static int numMetaServer;
 
 	PFSMetadataServerStrategy * pfsMetadataServerStrategy;
 

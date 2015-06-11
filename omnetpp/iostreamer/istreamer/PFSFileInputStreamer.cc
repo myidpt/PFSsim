@@ -48,14 +48,18 @@ PFSFiles * PFSFileInputStreamer::readPFSFiles() {
 				}
 				if(line[i] == 'k' || line[i] == 'K'){
 					sep = true;
-					if(val == -1) // Useless label if there's no numeral part right before k.
-						continue;
+					if(val == -1){ // Useless label if there's no numeral part right before k.
+						i++;
+					    continue;
+					}
 					val = val * KiloUnitConvertion;
 				}
 				if(line[i] == 'm' || line[i] == 'M'){
 					sep = true;
-					if(val == -1) // Useless label if there's no numeral part right before m.
-						continue;
+					if(val == -1){ // Useless label if there's no numeral part right before m.
+						i++;
+					    continue;
+					}
 					val = val * KiloUnitConvertion * KiloUnitConvertion;
 				}
 

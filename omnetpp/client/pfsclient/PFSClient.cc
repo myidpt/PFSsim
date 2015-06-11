@@ -8,7 +8,7 @@
 Define_Module(PFSClient);
 
 int PFSClient::idInit = 0;
-
+int PFSClient::numClients=0;
 /*
  * Initialize the ID of this module.
  */
@@ -27,6 +27,14 @@ void PFSClient::initialize() {
 	maxTransferWindowSize = par("max_transfer_window_size").longValue();
 	dataPacketProcessTime = par("data_packet_process_time").doubleValue();
 	metadataPacketProcessTime = par("metadata_packet_process_time").doubleValue();
+	if(numClients == 0){//Parse only one time cause it's a static
+	    numClients = par("numClients").longValue();
+	}
+	//In order to rebuild simulation and parse the corrects files
+	if(myID >= numClients){
+	    idInit=0;
+	    myID=myID%numClients;
+	}
 
 	StreamersFactory streamersfactory;
 	string outputMethod = par("data_packet_output_method").stdstringValue();

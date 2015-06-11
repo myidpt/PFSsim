@@ -5,13 +5,21 @@
 Define_Module(Proxy);
 
 int Proxy::proxyID = 0;
+int Proxy::numProxies=0;
 
 Proxy::Proxy() {
 }
 
 void Proxy::initialize(){
-	myID = proxyID;
-	proxyID ++;
+    //In order to rebuild Network with the correct ID.
+    if(numProxies==0){//Parse only one time
+        numProxies=par("numProxies").longValue();
+    }
+    myID = proxyID;
+    proxyID ++;
+    if(proxyID>=numProxies){
+        proxyID=0;
+    }
 
 	algorithm = par("algorithm").stringValue();
 	const char * alg_param =par("alg_param").stringValue();

@@ -11,6 +11,7 @@ simple LFS_M {
         double disk_size;
         string ext_in_path_prefix;
         string ext_out_path_prefix;
+        int numDservers;
         @display("i=device/device");
     gates:
         inout diskcache;

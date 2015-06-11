@@ -68,8 +68,11 @@ gPacket * WindowBasedTrace::getNextgPacketFromWindow(){
 	for(int i = 0; i < layout->getServerNum(); i ++){
 		if(dataSizeInWindow[i] > 0){ // Unsent
 			packet = new gPacket();
+			//cout << " The offset of the data stored on server "<< i <<" is : "<< dsoffsets[i] << endl;
 			packet->setLowoffset(dsoffsets[i] % LOWOFFSET_RANGE);
+			//cout << " The lowoffset of the data stored on server "<< i <<" is : "<< dsoffsets[i] % LOWOFFSET_RANGE << endl;
 			packet->setHighoffset(dsoffsets[i] / LOWOFFSET_RANGE);
+			//cout << " The lowoffset of the data stored on server "<< i <<" is : "<< dsoffsets[i] / LOWOFFSET_RANGE << endl;
 			packet->setSize(dataSizeInWindow[i]);
 			sentPktSize[i] = dataSizeInWindow[i];
 			packet->setRead(read);
@@ -142,7 +145,6 @@ bool WindowBasedTrace::openNewWindow(){
 			// Understand it with setLayout method. Reduce the access size with the offset inside the access.
 			firsttime = false;
 		}
-
 		if(sizeInc < leftAggSize){
 			dataSizeInWindow[i] += sizeInc;
 			leftAggSize -= sizeInc;
@@ -198,7 +200,6 @@ gPacket * WindowBasedTrace::nextgPacket() {
 			return NULL;
 		}
 	}
-
 	// All the packets from the current window are sent and received.
 	if(! openNewWindow()) {
 		return NULL;

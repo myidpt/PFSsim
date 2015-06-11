@@ -25,6 +25,7 @@
 class Proxy : public cSimpleModule{
 protected:
 	static int proxyID;
+	static int numProxies;
 	int myID;
 	const char * algorithm;
 	int degree;

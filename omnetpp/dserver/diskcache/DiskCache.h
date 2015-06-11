@@ -31,6 +31,7 @@ class DiskCache : public cSimpleModule
 protected:
 	int myID;
 	static int idInit;
+	static int numDiskCache;
 	struct pr_t { // page range type. unit: page.
 		int fileid;
 		long start;

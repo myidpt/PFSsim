@@ -20,6 +20,7 @@ simple Application
         string trace_output_file_postfix;
         
         int trace_count;
+        int numClients;
         int trace_file_trace_index_digits;
         int trace_file_client_index_digits;
         

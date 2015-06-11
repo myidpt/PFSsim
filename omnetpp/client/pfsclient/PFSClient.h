@@ -21,6 +21,7 @@ class PFSClient : public cSimpleModule {
 protected:
 	int myID;
 	static int idInit;
+	static int numClients;
 
 	IPacketOutputStreamer * metadataPacketOutput;
 	IPacketOutputStreamer * dataPacketOutput;

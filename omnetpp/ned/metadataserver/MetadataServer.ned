@@ -16,6 +16,8 @@ simple MetadataServer
         string pfs_input_file_prefix;
         string pfs_input_file_postfix;
         
+        int numMetaServer;
+        
         @display("i=device/mainframe");
         bool sendInitialMessage = false;
     gates:

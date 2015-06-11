@@ -4,6 +4,7 @@ simple PFSClient
 {
     parameters:
         string pfs_client_signature;
+        int numClients;
         
         // Time overhead.
         double data_packet_process_time;

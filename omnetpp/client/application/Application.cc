@@ -13,13 +13,14 @@ Define_Module(Application);
  * Used to initialize the IDs for each application class.
  */
 int Application::initID = 0;
+int Application::numClients=0;
 int Application::activeApplications = 0;
 
 /*
  * Initialize the ID.
  */
 Application::Application() {
-	myID = initID ++;
+    myID = (initID ++);
 }
 
 /*
@@ -29,10 +30,17 @@ Application::Application() {
 void Application::initialize() {
 	StreamersFactory streamersfactory;
 	// For initialization of trace input files.
-	int count = par("trace_count").longValue();
+	count = par("trace_count").longValue();
 	int traceDigits = par("trace_file_trace_index_digits").longValue();
 	int clientDigits = par("trace_file_client_index_digits").longValue();
-
+	//In order to rebuild simulation and parse the corrects files
+	if(numClients == 0){//Parse only one time cause it's a static
+	    numClients = par("numClients").longValue();
+	}
+	if(myID >= numClients){
+	    initID=0;
+	    myID=myID%numClients;
+	}
 	string prefixBeforeClientID = par("trace_input_file_prefix_before_client_ID").stdstringValue();
 	string prefixAfterClientID = par("trace_input_file_prefix_after_client_ID").stdstringValue();
 	string postfix = par("trace_input_file_postfix").stdstringValue();
@@ -131,11 +139,14 @@ void Application::readOneTrace(int id) {
     SimpleTrace trace;
     if(! traceInput->readTrace(id, &trace)) {
         // End of file.
-        if (active) {
+        count--;
+        if (count == 0) {
+            //cout << "Number of Application Active: #" << activeApplications << endl;
             activeApplications --;
             active = false;
         }
         if (activeApplications == 0) {
+            initID = 0;
             endSimulation(); // If all the input files meet EOF, end the simulation.
         }
         return;
@@ -144,7 +155,7 @@ void Application::readOneTrace(int id) {
     // Create AppRequest.
     AppRequest * request = trace.createAppRequest();
     request->setKind(TRACE_REQ);
-
+    request->setName("TRACE_REQ");
     // Schedule AppRequest.
     double sendTime;
     if (trace.getSync() == 0) { // Non-sync.
@@ -191,6 +202,7 @@ void Application::sendSafe(AppRequest * request) {
  * Clean the memory.
  */
 void Application::finish() {
+
 	if (traceInput != NULL) {
 		delete traceInput;
 	}

@@ -136,8 +136,9 @@ void VFS::dispatchPageReqs(){
 		if(pgreq == NULL)
 			break;
 		if(pgreq->getODIRECT()){
-			sendToLFS(pgreq);
-			pgreq->setKind(BLK_REQ);
+		    pgreq->setKind(BLK_REQ);
+		    pgreq->setName("BLK_REQ");
+		    sendToLFS(pgreq);
 		}else{
 			sendToDiskCache(pgreq);
 		}

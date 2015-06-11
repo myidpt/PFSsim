@@ -12,6 +12,7 @@ network pfssim_1
         int numClients;
         int numDservers;
         int numProxies;
+        int numMetaServer;
     types:
         channel Channel extends ned.DatarateChannel
         {
