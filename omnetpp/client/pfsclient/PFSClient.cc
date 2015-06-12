@@ -27,13 +27,11 @@ void PFSClient::initialize() {
 	maxTransferWindowSize = par("max_transfer_window_size").longValue();
 	dataPacketProcessTime = par("data_packet_process_time").doubleValue();
 	metadataPacketProcessTime = par("metadata_packet_process_time").doubleValue();
-	if(numClients == 0){//Parse only one time cause it's a static
-	    numClients = par("numClients").longValue();
-	}
+
+	numClients = par("numClients").longValue();//Parse too many time but if configuration change we have to update the value
 	//In order to rebuild simulation and parse the corrects files
-	if(myID >= numClients){
+	if(myID >= numClients-1){
 	    idInit=0;
-	    myID=myID%numClients;
 	}
 
 	StreamersFactory streamersfactory;

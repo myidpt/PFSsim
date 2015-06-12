@@ -7,13 +7,14 @@ Define_Module(Disk);
 
 int Disk::idInit = 0;
 int Disk::numDisk = 0;
+
 Disk::Disk() {
 }
 
 void Disk::initialize(){
-    if(numDisk == 0){//Parse only one time cause it's a static
-        numDisk=par("numDservers").longValue();//Suppose that there is 1 Disk per Server, If not change the omnet.ini and parse the correct value and change the variable in Disk.ned
-    }
+
+    //Parse too many time but if configuration change we have to update the value
+    numDisk=par("numDservers").longValue();//Suppose that there is 1 Disk per Server, If not change the omnet.ini and parse the correct value and change the variable in Disk.ned
     myID = idInit ++;
     if(myID>=numDisk-1){
        idInit=0;

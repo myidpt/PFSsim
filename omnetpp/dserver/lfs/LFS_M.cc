@@ -39,19 +39,18 @@ void LFS_M::initialize(){
 	int new_ext_gap = par("new_ext_gap").longValue();
 	const char * inextpath = par("ext_in_path_prefix").stringValue();
 	const char * outextpath = par("ext_out_path_prefix").stringValue();
-	//In order to rebuild simulation and parse the correct files
-	if(nbDisk == 0){//Parse only one time cause it's a static
-	    nbDisk = par("numDservers").longValue();//Suppose that there is 1 Disk per Server, If not change the omnet.ini and parse the correct value
-	}
-	if(idInit >= nbDisk){
-	    idInit = 0;
-	}
+
 	if(!strcmp(fsName, "ext3"))
 		lfs = new EXT3(idInit, degree, disk_size, page_size, blk_size, inextpath, outextpath, new_ext_size, new_ext_gap);
 	else
 		PrintError::print("LFS_M", string("Sorry, file system type ")+fsName+" is not supported.");
-
 	idInit ++;
+	//In order to rebuild simulation and parse the correct files
+	//Parse too many time but if configuration change we have to update the value
+	nbDisk = par("numDservers").longValue();//Suppose that there is 1 Disk per Server, If not change the omnet.ini and parse the correct value
+	if(idInit >= nbDisk){
+	    idInit = 0;
+	}
 }
 
 void LFS_M::handleMessage(cMessage * cmsg){

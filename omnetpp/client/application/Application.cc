@@ -33,14 +33,13 @@ void Application::initialize() {
 	count = par("trace_count").longValue();
 	int traceDigits = par("trace_file_trace_index_digits").longValue();
 	int clientDigits = par("trace_file_client_index_digits").longValue();
+
 	//In order to rebuild simulation and parse the corrects files
-	if(numClients == 0){//Parse only one time cause it's a static
-	    numClients = par("numClients").longValue();
-	}
-	if(myID >= numClients){
+	numClients = par("numClients").longValue();//Parse too many time but if configuration change we have to update the value
+	if(myID >= numClients-1){
 	    initID=0;
-	    myID=myID%numClients;
 	}
+
 	string prefixBeforeClientID = par("trace_input_file_prefix_before_client_ID").stdstringValue();
 	string prefixAfterClientID = par("trace_input_file_prefix_after_client_ID").stdstringValue();
 	string postfix = par("trace_input_file_postfix").stdstringValue();
@@ -103,6 +102,10 @@ void Application::handleMessage(cMessage * message) {
  */
 void Application::generateInitialTraces() {
     if (!active) {
+        //In order to rebuild the Network while a simulation is not finished
+        if(activeApplications >= numClients){
+            activeApplications = 0;
+        }
         activeApplications ++;
         active = true;
     }
