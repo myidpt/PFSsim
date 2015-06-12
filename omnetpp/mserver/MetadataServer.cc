@@ -22,8 +22,10 @@ int MetadataServer::numMetaServer=0;
 
 void MetadataServer::initialize()
 {
-    //Parse too many times but if configuration change we have to update the value
-    numMetaServer = par("numMetaServer").longValue();
+    //Parse only one time cause it's a static on the first call
+    if(initID == 0){
+        numMetaServer = par("numMetaServer").longValue();
+    }
 	myID = initID;
 	initID ++;
 	//In order to rebuild simulation and keep the ID

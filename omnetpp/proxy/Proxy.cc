@@ -12,12 +12,13 @@ Proxy::Proxy() {
 
 void Proxy::initialize(){
     //In order to rebuild Network with the correct ID.
-    //Parse too many time but if configuration change we have to update the value
-    numProxies=par("numProxies").longValue();
+    if(proxyID==0){//Parse only one time cause it's a static on the first call
+        numProxies=par("numProxies").longValue();
+    }
     myID = proxyID;
     proxyID ++;
     if(proxyID>=numProxies){
-        proxyID=0;
+        proxyID=0; //The last call reset the proxyID
     }
 
 	algorithm = par("algorithm").stringValue();

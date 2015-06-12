@@ -13,8 +13,10 @@ Disk::Disk() {
 
 void Disk::initialize(){
 
-    //Parse too many time but if configuration change we have to update the value
-    numDisk=par("numDservers").longValue();//Suppose that there is 1 Disk per Server, If not change the omnet.ini and parse the correct value and change the variable in Disk.ned
+    //Parse only one time cause it's a static on the first call
+    if(idInit == 0){
+        numDisk=par("numDservers").longValue();//Suppose that there is 1 Disk per Server, If not change the omnet.ini and parse the correct value and change the variable in Disk.ned
+    }
     myID = idInit ++;
     if(myID>=numDisk-1){
        idInit=0;

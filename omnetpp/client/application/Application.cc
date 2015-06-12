@@ -35,7 +35,9 @@ void Application::initialize() {
 	int clientDigits = par("trace_file_client_index_digits").longValue();
 
 	//In order to rebuild simulation and parse the corrects files
-	numClients = par("numClients").longValue();//Parse too many time but if configuration change we have to update the value
+	if(myID==0){
+	    numClients = par("numClients").longValue();//Parse only one time cause it's a static on the first call
+	}
 	if(myID >= numClients-1){
 	    initID=0;
 	}

@@ -278,8 +278,10 @@ void DiskCache::file_ra_state::update_flag_incache(long s, int length, bool hit)
 void DiskCache::initialize()
 {
     //In order to be coherent with the error message when application is rebuilt
-    //Parse too many time but if configuration change we have to update the value
-    numDiskCache=par("numDservers").longValue();//Suppose that there is 1 DiskCache per Server, If not change the omnet.ini and parse the correct value and change the variable in DiskCache.ned
+    //Parse only one time cause it's a static on the first call
+    if(idInit==0){
+        numDiskCache=par("numDservers").longValue();//Suppose that there is 1 DiskCache per Server, If not change the omnet.ini and parse the correct value and change the variable in DiskCache.ned
+    }
     myID = idInit ++;
     if(myID>=numDiskCache-1){
        idInit=0;

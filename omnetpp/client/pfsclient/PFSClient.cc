@@ -28,8 +28,10 @@ void PFSClient::initialize() {
 	dataPacketProcessTime = par("data_packet_process_time").doubleValue();
 	metadataPacketProcessTime = par("metadata_packet_process_time").doubleValue();
 
-	numClients = par("numClients").longValue();//Parse too many time but if configuration change we have to update the value
 	//In order to rebuild simulation and parse the corrects files
+	if(myID==0){
+	    numClients = par("numClients").longValue();//Parse only one time cause it's a static on the first call
+	}
 	if(myID >= numClients-1){
 	    idInit=0;
 	}

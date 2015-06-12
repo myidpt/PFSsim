@@ -26,8 +26,10 @@ DSD_M::DSD_M() {
 
 void DSD_M::initialize(){
     //In order to be coherent with the number of server: 0 for server 0 etc...
-    //Parse too many times but if configuration change we have to update the value
-    numDSD=par("numDservers").longValue();//Suppose that there is 1 DSD per Server, If not change the omnet.ini and parse the correct value
+    //Parse only one time cause it's a static on the first call
+    if(idInit==0){
+        numDSD=par("numDservers").longValue();//Suppose that there is 1 DSD per Server, If not change the omnet.ini and parse the correct value
+    }
     myID = idInit ++;
     if(myID>=numDSD-1){
        idInit=0;

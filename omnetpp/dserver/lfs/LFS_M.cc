@@ -46,8 +46,10 @@ void LFS_M::initialize(){
 		PrintError::print("LFS_M", string("Sorry, file system type ")+fsName+" is not supported.");
 	idInit ++;
 	//In order to rebuild simulation and parse the correct files
-	//Parse too many time but if configuration change we have to update the value
-	nbDisk = par("numDservers").longValue();//Suppose that there is 1 Disk per Server, If not change the omnet.ini and parse the correct value
+	//Parse only one time cause it's a static on the first call
+	if(idInit == 1){
+	    nbDisk = par("numDservers").longValue();//Suppose that there is 1 Disk per Server, If not change the omnet.ini and parse the correct value
+	}
 	if(idInit >= nbDisk){
 	    idInit = 0;
 	}
