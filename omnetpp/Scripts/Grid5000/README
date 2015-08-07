@@ -1,0 +1,123 @@
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#  
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#  
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+#  MA 02110-1301, USA.
+#  
+#  
+
+#### launch benchmark tests ####
+
+The goal of this script is to launch successively different tests with IOR and stock the results in a file per iteration
+
+Firstly you have to verify the path of the two executables:
+MPI_EXEC=
+IOR_EXEC=
+
+There are some defaults options for MPICH and IOR
+MPI_OPTIONS_D=
+IOR_OPTIONS_D=
+
+In a terminal: launch_benchmark_tests -h to see the existing tests
+
+Give in argument the list of the tests : launch_benchmark_tests 5 8 7 4
+This example will execute the 5th tests and then the 8th etc
+
+To execute all without give the list: launch_benchmark_tests -a
+
+You can change the name of the result files and the path where they will be save
+PATH_TO_RESULT=
+PREFIX=
+SUFFIX=
+The file will have this form: 
+${PATH_TO_RESULT}${PREFIX}${ID}-${SID}${SUFFIX}
+
+ID identifies the test.
+SID is the number of the iteration.
+One file per iteration per test.
+
+Each simulation can be iterate Nth times (default N=5):
+ITERATION=
+
+Define the number of servers for your tests:
+NUM_SERVER=
+
+Add a simulation:
+A simply way to add your own test is the following
+
+-Add an entry in the switch with an integer (the ID of the test)
+-Put launchSimulation "[NAME OF YOUR TEST]" "[OPTIONS FOR MPICH]" "[OPTIONS FOR IOR]"
+-Add to the help entry the number and a quick description of your test
+-Add at the end of the switch in "-a" option the same line as in step two in order to launch it when you want all tests one after the other.
+
+-----------------------------------------------------------------------------------------------------------------------------
+
+#### get_time_value.py ####
+
+Python script to fetch the result previously generated.
+It is formated to work only with a result of IOR.
+It calculates the average of N iterations and put the result in the same csv file as the csv file generated for the simulations with PFSSim
+
+In a terminal: python get_time_value.py
+
+You must change this following variables if you changed PREFIX and SUFFIX:
+prefix=
+suffix=
+CAUTION: If you change prefix for the simulations you have to change the code in this script to save the results of tests in same csv file
+
+Be sure that variable is the path where the CSV file of PFSSim simulations are stocked:
+pathToResults=
+
+-----------------------------------------------------------------------------------------------------------------------------
+
+#### Define cluster PVFS ####
+
+PVFS2 and its Kernel module have to be installed correctly before launching this script
+The mounted point : /mnt/pvfs2 must be created before
+It uses the file OAR_NODE_FILE (list of nodes allocated) to choose clients and servers
+OAR_NODE_FILE has to be in the PATH variable environment to find the list
+Two arguments (in this order): $NUM_CLIENTS $NUM_SERVERS(MetaServer include)
+
+It creates two files : mpd.hosts (list of client nodes)
+					   server.hosts (list of server nodes)
+				   
+CAUTION: $NUM_CLIENTS + $NUM_SERVERS have to be inferior or equal to total number of nodes
+	   : Some configurations could not work if the sum of the three biggest clusters is strictly lower than $NUM_CLIENTS
+	   : Work only with GRAPHENE cluster
+	  
+This script launches the other scripts to configure pvfs2:
+pvfs2-genconfig /etc/pvfs2-fs.conf
+launch_servers_pvfs2.sh
+launch_client_pvfs2.sh
+mount_pvfs2_server.sh
+
+-----------------------------------------------------------------------------------------------------------------------------
+
+#### Launch Servers PVFS2 ####
+
+It uses pvfs2-fs.conf and server.hosts to launch servers by ssh
+It configures fstab file
+Argument: $NUM_SERVERS
+
+-----------------------------------------------------------------------------------------------------------------------------
+
+#### Launch Clients PVFS2 ####
+
+It uses fstab and mpd.hosts to launch clients by ssh
+Be sure that PATH_EXEC_CLIENT is correct to find the executable of PVFS2 client 
+
+-----------------------------------------------------------------------------------------------------------------------------
+
+#### Mount PVFS2 Server ####
+
+It uses mpd.hosts and server.hosts to mount on each client PVFS2 file system
+Argument: $NUM_SERVERS
