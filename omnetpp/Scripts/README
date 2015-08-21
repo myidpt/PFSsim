@@ -1,0 +1,78 @@
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#  
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#  
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+#  MA 02110-1301, USA.
+#  
+#  
+
+#### Launch_Simulations ####
+
+The goal of this script is to launch successively two versions of PFSSim simulator and stock the results in a file per version
+
+Firstly you have to verify the path of the two versions:
+PATH_PFSSIM_MASTER=
+PATH_PFSSIM_STAGE=
+
+This variables are in order to come back to the directory where is this script
+They are necessary to a correct functioning  
+CMD_BACK_PFSSIM_MASTER=
+CMD_BACK_PFSSIM_STAGE=
+
+In a terminal: launch_simulations -h to see the existing simulations
+
+Give in argument the list of the simulation : launch_simulations 5 8 7 4
+This example will execute the 5th simulation and then the 8th etc
+
+To execute all without give the list: launch_simulations -a
+
+You can change the name of the result files and the path where they will be save
+PATH_TO_RESULT=
+PREFIX=
+The file will have this form: 
+${PATH_TO_RESULT}${PREFIX}${I}-${SID}_before.txt
+${PATH_TO_RESULT}${PREFIX}${I}-${SID}_after.txt
+
+I is the ID of test.
+SID is the number of the iteration.
+One file per iteration per version of simulation.
+
+Each simulation can be iterate Nth times (default N=5):
+ITERATION=
+
+Add a simulation:
+A simply way to add your own test is the following
+
+-Add an entry in the switch with an integer (the ID of the test)
+-Put launchSimulation "[NAME OF YOUR SIMULATION]" "[OPTIONS FOR gen_input.sh]" "-c [NAME OF CONFIGURATION IN .INI FILES]"
+-Add to the help entry the number and a quick description of your simulation
+-Add at the end of the switch in "-a" option the same line as in step two in order to launch it when you want all simulation one after the other.
+
+-----------------------------------------------------------------------------------------------------------------------------
+
+#### getTimeValue ####
+
+Python script to fetch the result previously generated.
+It is formated to work only with a result of PFSSim.
+It calculates the average of N iterations and put the result of two versions in csv file
+It takes the time of execution too
+
+In a terminal: python getTimeValue.py
+
+The name of csv file will have this form : result_$I.csv
+I is the same number as described previously
+
+You must change this following variables if you changed PREFIX:
+prefix =
+
+Be sure that variable is the path where the results file of Launch_Simulations are stocked:
+pathToResults=

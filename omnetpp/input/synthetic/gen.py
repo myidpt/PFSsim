@@ -1,8 +1,8 @@
 import random
 import sys
 
-if (len(sys.argv) != 6):
-  print sys.argv[0], " <number of clients> <number of traces per client> <total size> <request size> <read(1/0)>"
+if (len(sys.argv) != 7):
+  print sys.argv[0], " <number of clients> <number of traces per client> <total size> <request size> <read(1/0)><file-per-proc(1/0)>"
   sys.exit()
 
 read = int(sys.argv[5])
@@ -10,12 +10,13 @@ if (read != 1 and read != 0):
   print "read value should be 1 or 0"
   sys.exit()
 
-print "Generating input files. Number of clients:", sys.argv[1], " number of traces per client: ", sys.argv[2], " total size: ", sys.argv[3], " request size:", sys.argv[4], " read: ", sys.argv[5]
+print "Generating input files. Number of clients:", sys.argv[1], " number of traces per client: ", sys.argv[2], " total size: ", sys.argv[3], " request size:", sys.argv[4], " read: ", sys.argv[5], " file-per-proc: ", sys.argv[6]
 
 nclient = int(sys.argv[1])
 ntrace = int(sys.argv[2])
 tsize = long(sys.argv[3])
 size = long(sys.argv[4])
+file_per_process = int(sys.argv[6])
 nline = int(tsize / size)
 
 time = 0
@@ -45,5 +46,6 @@ for i in range(0, nclient):
 			offset += size
 			sync = 1
 			time = 0
-		fid += 1
+		if file_per_process == 1:
+			fid += 1
 		f.close()

@@ -16,7 +16,7 @@
 #include "lfs/ILFS.h"
 
 ILFS::ILFS(int id, int deg, long long disksize, int pagesize, int blksize, const char * inpath, const char * outpath) {
-	myId = id;
+    myId = id;
 	degree = deg;
 	page_size = pagesize;
 	blk_size = blksize;
@@ -130,8 +130,9 @@ int ILFS::findExtEntry(int fid, long logiaddr){
         return -1;
     }
 
-    if(logiaddr == extlist[fid][end].logistart + extlist[fid][end].length) // Should create a new entry.
+    if(logiaddr == extlist[fid][end].logistart + extlist[fid][end].length){ // Should create a new entry.
         return extentryNum[fid];
+    }
     while(1){
         middle = (start + end) >> 1;
         if(logiaddr < extlist[fid][middle].logistart){

@@ -25,6 +25,7 @@ using namespace std;
 class LFS_M : public cSimpleModule{
 protected:
 	static int idInit;
+	static int nbDisk;
 	ILFS * lfs;
 public:
 	LFS_M();

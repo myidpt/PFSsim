@@ -94,7 +94,8 @@ BlkRequest * EXT3::dispatchNext(){
 	int fid = pagereq->getFileId();
 
 
-    int extindex = findExtEntry(fid, br->start); // The index of the extent.
+    int extindex = findExtEntry(fid, br->start);// The index of the extent.
+    //cout << "EXT3::dispatchNext(): extindex = " << extindex << ", br->start = " << br->start << endl;
     if(extindex < 0){
         return NULL;
     }else if(extindex == extentryNum[fid]){ // Not allocated yet.

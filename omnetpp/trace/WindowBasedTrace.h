@@ -26,9 +26,9 @@
 // This class only represents one request from the client, it may be divided into multiple packets.
 class WindowBasedTrace : public ITrace {
 private:
-	const static int SW_SENT; // 0: The data request is sent.
+	const static int SW_SENT; // -2: The data request is sent.
 	const static int SW_RECEIVED; // -1: For the server window: received the reply for this request.
-	const static int SW_NULL; // -2: This data server slot does not need to be accessed.
+	const static int SW_NULL; // 0: This data server slot does not need to be accessed.
 
 	Layout * layout;
 

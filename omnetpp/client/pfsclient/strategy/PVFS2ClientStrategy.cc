@@ -154,8 +154,10 @@ void PVFS2ClientStrategy::generateDataPacketRequests(int fileID, vector<cPacket 
 			gpkt->setID(requestID);
 			gpkt->setClientID(myID);
 			if (gpkt->getRead()) {
+			    gpkt->setName("PFS_R_REQ");
 				gpkt->setKind(PFS_R_REQ);
 			} else {
+			    gpkt->setName("PFS_W_REQ");
 				gpkt->setKind(PFS_W_REQ);
 			}
 
@@ -251,6 +253,7 @@ void PVFS2ClientStrategy::processLastDataPacketResponse(gPacket * packet, vector
 		}
 
 		retRequest->setKind(TRACE_RESP);
+		retRequest->setName("TRACE_RESP");
 		packetlist->push_back(retRequest);
 	} else if(ret == trace->MORE_TO_SEND){ // You have done the current window, schedule next packets.
 		generateDataPacketRequests(packet->getFileId(), packetlist); // set up future event

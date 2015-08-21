@@ -24,6 +24,7 @@
 class DSD_M : public cSimpleModule{
 protected:
 	static int idInit;
+	static int numDSD;
 	int myID;
 	int packet_size_limit;
 	double parallel_job_proc_time;

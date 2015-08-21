@@ -15,6 +15,7 @@ simple DiskCache{
         int writeout_batch; // The number of pages to write back when the dirty_ratio is met.
         int diskread_batch; // The max number of pages to read each time.
         int disable_ra; // Read ahead can be shut off by tunning it to 1.
+        int numDservers;
         @display("i=device/memory");
     gates:
         inout vfs;

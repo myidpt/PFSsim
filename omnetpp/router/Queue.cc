@@ -41,16 +41,16 @@ void Queue::handleMessage(cMessage *msg){
 	else if(msg->arrivedOn("line$i")){ // from the outside
 		send(msg,"out");
 	}
-	else{// from the Routing module
-		if (endTransmissionEvent->isScheduled()){
-			// We are currently busy, so just queue up the packet.
-			queue->insert(msg);
-		}
-		else{
-			// We are idle, so we can start transmitting right away.
-			startTransmitting(msg);
-		}
-	}
+        else{// from the Routing module
+            if (endTransmissionEvent->isScheduled()){
+                // We are currently busy, so just queue up the packet.
+                queue->insert(msg);
+            }
+            else{
+                // We are idle, so we can start transmitting right away.
+                startTransmitting(msg);
+            }
+        }
 }
 
 void Queue::finish(){

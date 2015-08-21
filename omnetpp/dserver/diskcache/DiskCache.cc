@@ -18,6 +18,7 @@
 Define_Module(DiskCache);
 
 int DiskCache::idInit = 0;
+int DiskCache::numDiskCache=0;
 // Register the internal event types:
 // CACHE_ACCESS: cache access notifier
 // DIRTY_PAGE_EXPIRE: background write back notifier
@@ -276,7 +277,15 @@ void DiskCache::file_ra_state::update_flag_incache(long s, int length, bool hit)
 
 void DiskCache::initialize()
 {
-	myID = idInit ++;
+    //In order to be coherent with the error message when application is rebuilt
+    //Parse only one time cause it's a static on the first call
+    if(idInit==0){
+        numDiskCache=par("numDservers").longValue();//Suppose that there is 1 DiskCache per Server, If not change the omnet.ini and parse the correct value and change the variable in DiskCache.ned
+    }
+    myID = idInit ++;
+    if(myID>=numDiskCache-1){
+       idInit=0;
+    }
 	// receive parameters from ini file.
 	total_pages = par("total_pages").longValue();
 	total_usable_pages = par("usable_pages").longValue();

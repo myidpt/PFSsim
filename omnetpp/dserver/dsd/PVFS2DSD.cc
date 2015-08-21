@@ -67,6 +67,7 @@ void PVFS2DSD::newReq(gPacket * gpkt){
         // The last data sub-request.
         // We push the original request to the subreqQ.
         gpkt->setKind(LFILE_REQ);
+        gpkt->setName("LFILE_REQ");
         gpkt->setLowoffset(newinfo->loff);
         // This is necessary because you may have changed it due to
         // object size limit.

@@ -13,7 +13,7 @@ simple DSD_M
         int packet_size_limit;
         int degree;
         string pfsname;
-        
+        int numDservers;
         int O_DIRECT; // If set, the IO will go directly to the LFS.
     gates:
         inout eth;

@@ -23,6 +23,7 @@
 Define_Module(LFS_M);
 
 int LFS_M::idInit = 0;
+int LFS_M::nbDisk = 0;
 
 LFS_M::LFS_M() {
 }
@@ -43,8 +44,15 @@ void LFS_M::initialize(){
 		lfs = new EXT3(idInit, degree, disk_size, page_size, blk_size, inextpath, outextpath, new_ext_size, new_ext_gap);
 	else
 		PrintError::print("LFS_M", string("Sorry, file system type ")+fsName+" is not supported.");
-
 	idInit ++;
+	//In order to rebuild simulation and parse the correct files
+	//Parse only one time cause it's a static on the first call
+	if(idInit == 1){
+	    nbDisk = par("numDservers").longValue();//Suppose that there is 1 Disk per Server, If not change the omnet.ini and parse the correct value
+	}
+	if(idInit >= nbDisk){
+	    idInit = 0;
+	}
 }
 
 void LFS_M::handleMessage(cMessage * cmsg){

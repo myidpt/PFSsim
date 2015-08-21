@@ -18,12 +18,20 @@
 Define_Module(MetadataServer);
 
 int MetadataServer::initID = 0;
+int MetadataServer::numMetaServer=0;
 
 void MetadataServer::initialize()
 {
+    //Parse only one time cause it's a static on the first call
+    if(initID == 0){
+        numMetaServer = par("numMetaServer").longValue();
+    }
 	myID = initID;
 	initID ++;
-
+	//In order to rebuild simulation and keep the ID
+	if(initID >=numMetaServer){
+	    initID=0;
+	}
 	metadataPacketProcessTime = par("metadata_proc_time").doubleValue();
 	dataPacketProcessTime = par("data_proc_time").doubleValue();
 
